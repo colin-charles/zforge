@@ -1,4 +1,14 @@
 ## [1.0.3] - 2026-03-02
+
+## [1.0.8] - 2026-03-02
+### Fixed
+- `zforge validate` now checks the correct **nested** `skill.json` structure (`metadata.*` and `description.*` blocks) — previous validator checked non-existent top-level fields
+- Added `description.short` length constraint: must be <=120 chars (matches publisher.py)
+- Added `description.description_for_agent` word count constraint: must be >=10 words (matches publisher.py)
+- Added `metadata.category` validity check against known categories
+- Added `description.long` warning when missing
+- Validate now catches all errors that `zforge publish` would reject — no more surprises at publish time
+
 ## [1.0.7] - 2026-03-02
 
 ### Fixed
