@@ -22,6 +22,12 @@ try:
 except ImportError:
     HAS_REQUESTS = False
 
+# ── Public read-only Supabase credentials (anon key — safe to embed) ─────────
+# Creators don't need to configure env vars to publish — these are fallbacks.
+_PUBLIC_SUPABASE_URL  = "https://turwttpspnqmhszjwjgs.supabase.co"
+_PUBLIC_SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1cnd0dHBzcG5xbWhzemp3amdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMDM3NzAsImV4cCI6MjA4Nzc3OTc3MH0.fBajcHIJZs1lYwfEJRtnHvZdjqZ2u7YGIuPnhyAg85g"
+
+
 try:
     from rich.console import Console
     from rich.panel import Panel
@@ -279,7 +285,7 @@ def _print_rls_fix():
 
 
 def _check_keys() -> tuple[str, str]:
-    anon_key = os.environ.get('SUPABASE_ANON_KEY', '')  
+    anon_key = os.environ.get('SUPABASE_ANON_KEY') or _PUBLIC_SUPABASE_ANON  
     service_key = os.environ.get('SUPABASE_SERVICE_KEY', '')  
     if not anon_key:
         _print("  [bold red]SUPABASE_ANON_KEY not found[/bold red]")
@@ -290,9 +296,9 @@ def _submit_to_supabase(payload: dict, anon_key: str, service_key: str) -> dict:
     if not HAS_REQUESTS:
         raise RuntimeError("'requests' not installed")
     # Build URL dynamically (env fully loaded by this point)
-    _base = os.environ.get("SUPABASE_URL", "").rstrip("/")
+    _base = (os.environ.get("SUPABASE_URL") or _PUBLIC_SUPABASE_URL).rstrip("/")
     if not _base:
-        raise RuntimeError("SUPABASE_URL not set in environment")
+        raise RuntimeError("SUPABASE_URL not set and public fallback is missing — contact support")
     SUPABASE_REST_URL = _base + "/rest/v1/listings"
     # Service key must be a proper JWT (starts with eyJ), not UUID/placeholder
     svc_valid = (service_key
@@ -341,7 +347,7 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
     if env_file:
         _print(f"  [green]Loaded env from {env_file}[/green]")
 
-    supabase_url = os.environ.get('SUPABASE_URL', '').rstrip('/')
+    supabase_url = (os.environ.get('SUPABASE_URL') or _PUBLIC_SUPABASE_URL).rstrip('/')
 
     # 2. Read & validate skill.json
     manifest_path = skill_dir / 'skill.json'

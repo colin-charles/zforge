@@ -1,5 +1,13 @@
 ## [1.0.3] - 2026-03-02
 
+## [1.0.9] - 2026-03-02
+### Fixed
+- `zforge publish` no longer requires SUPABASE_URL or SUPABASE_ANON_KEY env vars
+- publisher.py now falls back to hardcoded public credentials (same pattern as main.py)
+- Creators can run `zforge publish` out of the box with no environment configuration
+- Service key (SUPABASE_SERVICE_KEY) remains env-only — it is admin-only and never embedded
+
+
 ## [1.0.8] - 2026-03-02
 ### Fixed
 - `zforge validate` now checks the correct **nested** `skill.json` structure (`metadata.*` and `description.*` blocks) — previous validator checked non-existent top-level fields
