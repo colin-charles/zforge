@@ -31,7 +31,7 @@ try:
     from importlib.metadata import version as _pkg_version
     VERSION = _pkg_version("zforge")
 except Exception:
-    VERSION = "2.1.10"  # fallback only
+    VERSION = "2.1.11"  # fallback only
 
 def _check_for_update() -> bool:
     """Check PyPI for a newer version — synchronous. Returns True if upgraded."""
