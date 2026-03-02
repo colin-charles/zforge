@@ -106,6 +106,13 @@
 - AgentZero SKILL.md for use as an installable agent skill
 - One-liner install script (`install.sh`)
 
+## [2.0.5] - 2026-03-02
+### Fixed
+- Auto-upgrade no longer fires when already on latest version
+- Added 24h cooldown cache (~/.zforge_update_check) — PyPI checked at most once per day
+- Strict `_ver(latest) <= _ver(VERSION)` guard added as early exit before any pip call
+
+
 ## [2.0.4] - 2026-03-02
 ### Fixed
 - Hardcoded real Supabase project URL directly in `publisher.py` and `main.py`

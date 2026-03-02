@@ -27,31 +27,41 @@ app = typer.Typer(
     rich_markup_mode="rich" if HAS_RICH else None,
 )
 
-VERSION = "2.0.4"
+VERSION = "2.0.5"
 
 def _check_for_update() -> None:
-    """Check PyPI for a newer version and auto-upgrade if one is found."""
-    import subprocess
+    """Check PyPI for a newer version — at most once per 24 hours."""
+    import subprocess, time, pathlib
     try:
+        # --- 24h cooldown via cache file ---
+        _cache = pathlib.Path.home() / ".zforge_update_check"
+        now = time.time()
+        if _cache.exists() and (now - _cache.stat().st_mtime) < 86400:
+            return  # checked within last 24 hours, skip
+        _cache.touch()  # update timestamp before network call
+
+        def _ver(v): return tuple(int(x) for x in v.split("."))
+
         req = urllib.request.Request(
             "https://pypi.org/pypi/zforge/json",
             headers={"User-Agent": f"zforge/{VERSION}"}
         )
         with urllib.request.urlopen(req, timeout=3) as resp:
-            data = _json.loads(resp.read())
-            latest = data["info"]["version"]
-            def _ver(v): return tuple(int(x) for x in v.split("."))
-            if _ver(latest) > _ver(VERSION):
-                print(f"⚡ zforge v{VERSION} → v{latest} found. Auto-upgrading...")
-                result = subprocess.run(
-                    [sys.executable, "-m", "pip", "install", "--upgrade", "zforge",
-                     "--quiet", "--disable-pip-version-check"],
-                    capture_output=True, text=True
-                )
-                if result.returncode == 0:
-                    print(f"✅ Upgraded to zforge v{latest} — restart to use new version.\n")
-                else:
-                    print(f"⚠️  Auto-upgrade failed. Run: pip install --upgrade zforge\n")
+            latest = _json.loads(resp.read())["info"]["version"]
+
+        if _ver(latest) <= _ver(VERSION):
+            return  # already on latest, nothing to do
+
+        print(f"⚡ zforge v{VERSION} → v{latest} found. Auto-upgrading...")
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--upgrade", "zforge",
+             "--quiet", "--disable-pip-version-check"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            print(f"✅ Upgraded to zforge v{latest} — restart to use new version.\n")
+        else:
+            print(f"⚠️  Auto-upgrade failed. Run: pip install --upgrade zforge\n")
     except Exception:
         pass  # Never crash the CLI over an update check
 
