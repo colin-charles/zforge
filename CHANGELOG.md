@@ -1,5 +1,11 @@
 ## v2.1.8 — 2026-03-02
 
+## [2.1.11] - 2026-03-02
+### Changed
+- Upgraded PyPI classifier from Beta to Production/Stable
+- Added License and OS classifiers for better package trust signals
+
+
 ## [2.1.10] - 2026-03-02
 ### Changed
 - Reduced auto-upgrade cooldown cache from 5 minutes to 1 minute
