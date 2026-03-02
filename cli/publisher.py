@@ -256,7 +256,7 @@ def _load_apol_cert(skill_dir: Path) -> dict:
 # Supabase REST submission
 # ---------------------------------------------------------------------------
 
-SUPABASE_REST_URL = "https://turwttpspnqmhszjwjgs.supabase.co/rest/v1/listings"
+SUPABASE_REST_URL = os.environ.get("SUPABASE_URL", "").rstrip("/") + "/rest/v1/listings"
 SUPABASE_DASHBOARD = "https://supabase.com/dashboard/project/turwttpspnqmhszjwjgs/editor"
 
 RLS_FIX_SQL = """
