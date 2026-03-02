@@ -213,10 +213,16 @@ def apol_certify(skill_dir: Path) -> ApolResult:
         _rprint(f"  [yellow]APOL judge unavailable ({e}) — skipping APOL scoring[/yellow]")
         return ApolResult(certified=False, score=0.0, skill_md=current_skill_md, skipped=True)
 
-    score    = float(result.get("composite_score", 0.0))
-    kpis     = result.get("kpis", {})
+    score    = float(result.get("composite", 0.0))
+    _fb      = result.get("feedback", {})
+    kpis     = {
+        "kpi2": {"score": result.get("kpi2", 1), "feedback": _fb.get("kpi2", "")},
+        "kpi3": {"score": result.get("kpi3", 1), "feedback": _fb.get("kpi3", "")},
+        "kpi4": {"score": result.get("kpi4", 1), "feedback": _fb.get("kpi4", "")},
+        "kpi5": {"score": result.get("kpi5", 0), "feedback": _fb.get("kpi5", "")},
+    }
     summary  = result.get("summary", "")
-    feedback = result.get("feedback", {})
+    feedback = _fb
     cert_id  = result.get("cert_id", None)
 
     _show_score(score, kpis, summary)
@@ -312,10 +318,16 @@ def apol_certify(skill_dir: Path) -> ApolResult:
             _rprint(f"  [yellow]Re-score failed ({e}) — accepting improvement at previous score[/yellow]")
             break
 
-        score    = float(result.get("composite_score", 0.0))
-        kpis     = result.get("kpis", {})
+        score    = float(result.get("composite", 0.0))
+        _fb      = result.get("feedback", {})
+        kpis     = {
+            "kpi2": {"score": result.get("kpi2", 1), "feedback": _fb.get("kpi2", "")},
+            "kpi3": {"score": result.get("kpi3", 1), "feedback": _fb.get("kpi3", "")},
+            "kpi4": {"score": result.get("kpi4", 1), "feedback": _fb.get("kpi4", "")},
+            "kpi5": {"score": result.get("kpi5", 0), "feedback": _fb.get("kpi5", "")},
+        }
         summary  = result.get("summary", "")
-        feedback = result.get("feedback", {})
+        feedback = _fb
         cert_id  = result.get("cert_id", None)
 
         _show_score(score, kpis, summary, cycle=cycle)

@@ -1,5 +1,11 @@
 ## [2.1.3] - 2026-03-02
 
+## [2.1.5] - 2026-03-02
+### Fixed
+- APOL score always showing 0.00 — CLI was reading `composite_score` but judge returns `composite`
+- KPI breakdown not displaying — CLI expected nested `kpis` dict but judge returns flat `kpi2/kpi3/kpi4/kpi5` fields + separate `feedback` dict; response is now normalized correctly
+
+
 ## [2.1.4] - 2026-03-02
 ### Fixed
 - VERSION constant now read dynamically from importlib.metadata instead of hardcoded string
