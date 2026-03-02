@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1] - 2026-03-02
+
+### Fixed
+- Corrected SKILL.md install paths to use `~/.zforge` instead of hardcoded `/a0/usr/workdir/ZeroForge`
+- Updated install.sh to clone from `colin-charles/zforge` (new standalone CLI repo)
+- Fixed all internal repo URL references from `zeroforge` to `zforge`
+- Improved install.sh with better UX and idempotent install check
+
 ## [1.0.0] - 2026-03-02
 
 ### Added
