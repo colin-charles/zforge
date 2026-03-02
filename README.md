@@ -21,6 +21,20 @@
 - 🚀 **Publish** skills to the ZeroForge marketplace
 - 🧪 **Test** skill behaviour before release
 
+
+## Trust & Safety
+
+`zforge` is fully **open source** (MIT licensed). Every line of code is publicly auditable:
+
+👉 **Source:** [github.com/colin-charles/zforge](https://github.com/colin-charles/zforge)  
+👉 **Author:** colin-charles — [hello@zero-forge.org](mailto:hello@zero-forge.org)  
+👉 **PyPI:** [pypi.org/project/zforge](https://pypi.org/project/zforge/)  
+
+- No telemetry or analytics collected
+- No credentials stored locally
+- All marketplace interactions go through ZeroForge's public API
+- Dependencies: `typer` and `rich` only — both widely trusted open-source libraries
+
 ## Installation
 
 ```bash

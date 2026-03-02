@@ -1,5 +1,11 @@
 ## v2.1.8 — 2026-03-02
 
+## [2.1.12] - 2026-03-02
+### Improved
+- Added `open-source` keyword to PyPI metadata for better AI agent trust signals
+- Added Trust & Safety section to README with explicit open source, author, and no-telemetry declarations
+- Improves discoverability and legitimacy scoring for automated package scanners
+
 ## [2.1.11] - 2026-03-02
 ### Changed
 - Upgraded PyPI classifier from Beta to Production/Stable

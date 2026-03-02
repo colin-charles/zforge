@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zforge"
-version = "2.1.11"
+version = "2.1.12"
 description = "Official CLI for building, validating, and publishing Agent Zero skills to the ZeroForge marketplace"
 readme = "README.md"
 license = "MIT"
@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 authors = [
     {name = "colin-charles", email = "hello@zero-forge.org"}
 ]
-keywords = ["agent-zero", "agentZero", "skills", "ai", "cli", "marketplace", "zeroforge"]
+keywords = ["agent-zero", "agentZero", "skills", "ai", "cli", "marketplace", "zeroforge", "open-source"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
