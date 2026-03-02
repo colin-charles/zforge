@@ -1,5 +1,14 @@
 ## v2.1.8 — 2026-03-02
 
+## [2.1.9] - 2026-03-02
+### Fixed
+- Auto-upgrade now fires `os.execv` immediately after pip succeeds (rc==0)
+- Removed unreliable `importlib.metadata` post-install version gate that caused
+  execv to be skipped on environments with stale metadata cache
+- Result: CLI now always restarts with new code after a successful upgrade,
+  preventing old code from continuing to run mid-command
+
+
 ### Fixed
 - `zforge install` now auto-detects Agent Zero environment: installs to `/a0/skills/` when it exists, falling back to `./skills/` for standalone use — fixes skill not found in `skills_tool`
 - Success message after install now hints Agent Zero users to reload skills

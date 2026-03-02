@@ -31,7 +31,7 @@ try:
     from importlib.metadata import version as _pkg_version
     VERSION = _pkg_version("zforge")
 except Exception:
-    VERSION = "2.1.8"  # fallback only
+    VERSION = "2.1.9"  # fallback only
 
 def _check_for_update() -> bool:
     """Check PyPI for a newer version — synchronous. Returns True if upgraded."""
@@ -63,22 +63,11 @@ def _check_for_update() -> bool:
             capture_output=True, text=True
         )
         if result.returncode == 0:
-            import importlib.metadata as _meta
-            try:
-                now_installed = _meta.version("zforge")
-            except Exception:
-                now_installed = VERSION
-            if now_installed == VERSION:
-                print(f"⚠️  Upgrade ran but zforge is still v{VERSION} in this environment.")
-                print(f"    Run manually: pip install --upgrade zforge\n")
-                try:
-                    _cache.unlink(missing_ok=True)
-                except Exception:
-                    pass
-                return False
-            else:
-                print(f"✅ Upgraded to zforge v{now_installed} — restarting with new version...\n")
-                return True  # signal caller to re-exec
+            # pip succeeded — restart immediately with new code.
+            # Do NOT gate on importlib.metadata (it caches stale version in the
+            # same process and causes os.execv to be skipped on some envs).
+            print(f"✅ Upgraded to zforge v{latest} — restarting...\n")
+            return True
         else:
             print(f"⚠️  Auto-upgrade failed. Run: pip install --upgrade zforge\n")
             return False
