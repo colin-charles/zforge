@@ -446,6 +446,11 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
         "tags": tags_list,
         "price": "free",
         "status": "pending",
+        "apol_certified": bool(getattr(quality, 'apol_certified', False)),
+        "apol_cert": {
+            "apol_composite_score": apol_score,
+            "apol_cert_id": cert_id,
+        } if getattr(quality, 'apol_certified', False) else None,
     }
 
     # 10. Summary panel
