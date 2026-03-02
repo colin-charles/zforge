@@ -27,10 +27,11 @@ app = typer.Typer(
     rich_markup_mode="rich" if HAS_RICH else None,
 )
 
-VERSION = "2.0.0"
+VERSION = "2.0.1"
 
 def _check_for_update() -> None:
-    """Silently check PyPI for a newer version and nudge the user."""
+    """Check PyPI for a newer version and auto-upgrade if one is found."""
+    import subprocess
     try:
         req = urllib.request.Request(
             "https://pypi.org/pypi/zforge/json",
@@ -41,13 +42,21 @@ def _check_for_update() -> None:
             latest = data["info"]["version"]
             def _ver(v): return tuple(int(x) for x in v.split("."))
             if _ver(latest) > _ver(VERSION):
-                print(f"⚡ zforge v{VERSION} → v{latest} available!")
-                print(f"   Run: pip install --upgrade zforge\n")
+                print(f"⚡ zforge v{VERSION} → v{latest} found. Auto-upgrading...")
+                result = subprocess.run(
+                    [sys.executable, "-m", "pip", "install", "--upgrade", "zforge",
+                     "--quiet", "--disable-pip-version-check"],
+                    capture_output=True, text=True
+                )
+                if result.returncode == 0:
+                    print(f"✅ Upgraded to zforge v{latest} — restart to use new version.\n")
+                else:
+                    print(f"⚠️  Auto-upgrade failed. Run: pip install --upgrade zforge\n")
     except Exception:
         pass  # Never crash the CLI over an update check
 
 def _run_update_check() -> None:
-    """Spawn background thread for update check — non-blocking."""
+    """Run update check in background thread — non-blocking."""
     threading.Thread(target=_check_for_update, daemon=True).start()
 
 

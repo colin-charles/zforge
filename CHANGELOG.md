@@ -1,3 +1,10 @@
+## [2.0.1] - 2026-03-02
+### Changed
+- Auto-upgrade on version check: instead of nudging users to upgrade manually,
+  the CLI now silently runs `pip install --upgrade zforge` automatically when
+  a newer version is found on PyPI. Users see a confirmation message and are
+  prompted to restart for the new version to take effect.
+
 ## [1.0.3] - 2026-03-02
 
 ## [2.0.0] - 2026-03-02
