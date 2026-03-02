@@ -444,7 +444,7 @@ def build(
     description: str,
     author: str,
     tags: list,
-    category: str = "utilities",
+    category: str = "skill",
     price: str = "free",
     cycles: int = 2,
     model: str = "openrouter/anthropic/claude-sonnet-4-5",
@@ -499,6 +499,20 @@ def build(
         sys.exit(1)
     shutil.copy(winner_path, skill_dir / "SKILL.md")
     _print(f"  [green]✓[/green] WINNER.md promoted to SKILL.md" if HAS_RICH else "  ✓ WINNER.md → SKILL.md")
+
+    # ── Category normalizer: map common invalid values to valid categories ──
+    VALID_CATEGORIES = {"skill", "guide", "template", "script", "course", "consulting"}
+    CATEGORY_MAP = {
+        "utilities": "skill", "utility": "script", "tools": "script",
+        "scripts": "script", "guides": "guide", "templates": "template",
+        "courses": "course", "plugin": "skill", "extension": "skill",
+        "workflow": "skill", "agent": "skill",
+    }
+    if category not in VALID_CATEGORIES:
+        normalized = CATEGORY_MAP.get(category.lower(), "skill")
+        _print(f"  [yellow]⚠ Category '{category}' is not valid — normalized to '{normalized}'[/yellow]" if HAS_RICH
+               else f"  ⚠ Category '{category}' normalized to '{normalized}'")
+        category = normalized
 
     # ── STEP 5: Populate skill.json ───────────────────────────────
     _rule("Step 5/7 — Populating skill.json")

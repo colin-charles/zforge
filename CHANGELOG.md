@@ -297,3 +297,10 @@ Requirement already satisfied: annotated-doc>=0.0.2 in /opt/venv/lib/python3.13/
 ## v2.1.17 — 2026-03-03
 ### Fixed
 - **Step 6 Validate bug**: `builder.py` was calling `zforge validate --skill .` but `validate` only accepts a positional argument, not `--skill` flag. Changed to `zforge validate` (uses cwd, already set to skill dir). Step 6 now runs cleanly.
+
+## v2.1.18 — 2026-03-03
+### Fixed
+- **Invalid default category**: `builder.py` and `main.py` defaulted to `"utilities"` which is not a valid category. Changed to `"skill"`.
+- **Invalid default tags**: `main.py` defaulted tags to `"utilities"`. Changed to `"automation"`.
+- **Category normalizer**: Added normalizer map in `builder.py` that maps common invalid values (`utilities`, `utility`, `tools`, `scripts`, `guides`, etc.) to the nearest valid category instead of failing validation.
+- **Help text**: `--category` option now lists all valid values in its help text.
