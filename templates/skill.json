@@ -1,0 +1,98 @@
+{
+  "$schema": "https://zero-forge.org/schemas/skill-manifest/v1.0.0.json",
+  "_comment": "ZeroForge Skill Manifest v1.0.0 — mirrors SKILL.md metadata for machine consumption",
+
+  "metadata": {
+    "name": "[SKILL_NAME]",
+    "slug": "[skill-name-hyphenated]",
+    "version": "1.0.0",
+    "author": "[AUTHOR_HANDLE]",
+    "author_url": "https://zero-forge.org/profile/[AUTHOR_HANDLE]",
+    "repository": "https://github.com/[AUTHOR]/[REPO]",
+    "license": "MIT",
+    "price": "free",
+    "category": "[productivity|data|web|dev-tools|ai|security|media|utility]",
+    "tags": ["[tag1]", "[tag2]", "[tag3]"],
+    "created_at": "[YYYY-MM-DD]",
+    "updated_at": "[YYYY-MM-DD]"
+  },
+
+  "description": {
+    "short": "[One sentence, ≤120 chars — what this skill does]",
+    "long": "[2-4 sentences — problem it solves, who it's for, key benefit]",
+    "description_for_agent": "[10-100 words — natural language trigger vocabulary an AI agent uses to DECIDE when to invoke this skill. Include action verbs, domain nouns, and synonyms. Example: Use this skill when the user asks to extract, scrape, or read content from web pages, capture screenshots of URLs, convert websites to markdown, or automate browser interactions for data collection.]"
+  },
+
+  "compatibility": {
+    "agentZero_min_version": "0.8.0",
+    "agentZero_tested_versions": ["0.8.0", "0.8.5", "0.9.0"],
+    "frameworks": [
+      "agentZero",
+      "claude-code",
+      "cursor",
+      "goose",
+      "openai-codex-cli",
+      "github-copilot"
+    ],
+    "os": ["linux", "macos", "windows-wsl"],
+    "python_min_version": "3.10"
+  },
+
+  "requirements": {
+    "pip": ["[package==version]"],
+    "apt": ["[apt-package]"],
+    "env_vars": [
+      {
+        "key": "[ENV_VAR_NAME]",
+        "required": true,
+        "description": "[What this env var does]",
+        "example": "[example-value-non-secret]"
+      }
+    ],
+    "system": "[Any OS-level requirements, e.g. Docker, Node.js]"
+  },
+
+  "files": {
+    "skill_md": "SKILL.md",
+    "install_script": "install.sh",
+    "requirements_txt": "requirements.txt",
+    "scripts": [
+      {
+        "filename": "scripts/[main_script].py",
+        "description": "[What this script does]",
+        "entrypoint": true
+      }
+    ],
+    "config": "[config.yaml or null]"
+  },
+
+  "quality": {
+    "apol_certified": false,
+    "apol_cert_id": null,
+    "apol_cert_issued_at": null,
+    "apol_composite_score": null,
+    "apol_cert_url": null,
+    "programmatic_metric": {
+      "_comment": "Points to a Python callable that returns float 0.0-1.0 for automated APOL scoring",
+      "module": "[skill_name].metrics",
+      "function": "validate_skill",
+      "signature": "(output: str, goal: dict) -> float",
+      "description": "[What the metric checks — e.g. verifies API response structure, validates extracted fields]"
+    },
+    "test_file": "SkillTest.md"
+  },
+
+  "marketplace": {
+    "listing_url": "https://zero-forge.org/listing/[slug]",
+    "featured": false,
+    "downloads": 0,
+    "stars": 0,
+    "verified_publisher": false,
+    "install_time_minutes": 5
+  },
+
+  "install": {
+    "one_liner": "zforge install [slug]",
+    "manual": "bash install.sh"
+  }
+}
