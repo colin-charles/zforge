@@ -55,13 +55,24 @@ def run_tests(skill_dir: Path) -> int:
     if has_skill_json:
         try:
             data = json.loads((skill_dir / "skill.json").read_text(encoding="utf-8"))
-            required_fields = ["name", "description", "version", "author", "tags"]
-            for field in required_fields:
-                if not check(f"Field '{field}' present", field in data and bool(data.get(field))):
+            meta = data.get("metadata", {})
+            desc = data.get("description", {})
+            quality = data.get("quality", {})
+
+            # Required metadata fields (nested under 'metadata')
+            required_meta = ["name", "version", "author", "tags"]
+            for field in required_meta:
+                if not check(f"metadata.{field} present", bool(meta.get(field))):
                     failures += 1
-            check("'apol_certified' field present", "apol_certified" in data, warn_only=True)
-            if "apol_certified" in data and data["apol_certified"]:
-                check("APOL composite score present", "composite" in data, warn_only=True)
+
+            # Description fields (nested under 'description')
+            if not check("description.short present", bool(desc.get("short"))):
+                failures += 1
+
+            # Quality fields (warn only — populated after APOL cert)
+            check("quality.apol_certified field present", "apol_certified" in quality, warn_only=True)
+            if quality.get("apol_certified"):
+                check("quality.apol_composite_score present", bool(quality.get("apol_composite_score")), warn_only=True)
         except json.JSONDecodeError as e:
             print(f"  {FAIL}  skill.json is invalid JSON: {e}")
             failures += 1

@@ -209,6 +209,13 @@ Requirement already satisfied: annotated-doc>=0.0.2 in /opt/venv/lib/python3.13/
 
 # Changelog
 
+## [2.1.16] - 2026-03-03
+
+### Fixed
+- **cli/scripts/test_runner.py**: Corrected skill.json field checks to match actual nested structure — checks `metadata.name`, `metadata.version`, `metadata.author`, `metadata.tags`, `description.short`, and `quality.apol_certified` instead of incorrect flat top-level keys
+- Step 7 now correctly reports `✓ All tests passed` for properly built skills
+
+
 ## [2.1.15] - 2026-03-02
 
 ### Fixed
