@@ -141,11 +141,18 @@ def dev(
 
 @app.command()
 def validate(
-    skill: str = typer.Option(".", "--skill", "-s", help="Skill directory to validate (default: cwd)"),
+    skill: str = typer.Argument(".", help="Skill name or path to validate (default: cwd)"),
 ):
     """Validate a skill directory against ZeroForge quality standards."""
     from cli.validator import run_validate
-    exit_code = run_validate(skill_dir=Path(skill).resolve())
+    # Accept skill name (looks up in cwd) or full path
+    skill_path = Path(skill)
+    if not skill_path.is_absolute() and not skill_path.is_dir():
+        # Try treating it as a skill name relative to cwd
+        candidate = Path.cwd() / skill
+        if candidate.is_dir():
+            skill_path = candidate
+    exit_code = run_validate(skill_dir=skill_path.resolve())
     raise typer.Exit(code=exit_code)
 
 

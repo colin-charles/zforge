@@ -1,4 +1,15 @@
 ## [1.0.3] - 2026-03-02
+## [1.0.7] - 2026-03-02
+
+### Fixed
+- `zforge validate <name>` now accepts skill name/path as a **positional argument** — no more `--skill` flag required
+- Validator is now fully **self-contained** — no longer depends on missing external `04_validate_skill.py` script
+- Validator runs inline checks: SKILL.md, skill.json required fields, required sections, and optional recommendations
+
+### Improved
+- Clear ✅ / ⚠️ / ❌ output with pass/fail summary
+- Handles skill name resolution (looks up `./skill_name/` relative to cwd)
+
 ### Fixed
 - publisher.py now includes `apol_certified` and `apol_cert` fields in Supabase payload so certified skills display the ZFORGE VERIFIED badge on the marketplace
 ## [1.0.5] - 2026-03-02
