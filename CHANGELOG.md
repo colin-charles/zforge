@@ -105,3 +105,10 @@
 - `zforge hello` — verify installation
 - AgentZero SKILL.md for use as an installable agent skill
 - One-liner install script (`install.sh`)
+
+## [2.0.4] - 2026-03-02
+### Fixed
+- Hardcoded real Supabase project URL directly in `publisher.py` and `main.py`
+  replacing unresolved `https://turwttpspnqmhszjwjgs.supabase.co` placeholder that caused
+  "marketplace temporarily unavailable" errors for users without env vars set.
+- `db.js` on zero-forge.org also updated with real project URL.
