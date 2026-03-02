@@ -434,6 +434,7 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
         "title": meta.name,
         "description": desc.short,
         "creator_name": meta.author,
+        "creator_handle": creator_handle or "",
         "creator_email": "",
         "url": storage_url or resolved_source or "",   # primary install URL
         "storage_url": storage_url or "",             # Supabase Storage zip

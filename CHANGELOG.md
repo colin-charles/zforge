@@ -1,3 +1,9 @@
+## [2.0.8] - 2026-03-02
+### Fixed
+- `publisher.py`: `creator_handle` now included in submission payload, enabling correct
+  GitHub avatar, profile linking, and creator attribution on the marketplace.
+  Previously the handle was computed but silently dropped before sending to the API.
+
 ## [2.0.7] - 2026-03-02
 ### Fixed
 - Auto-upgrade falsely printed "Upgraded to vX.X.X" even when pip ran in the wrong
