@@ -506,7 +506,7 @@ def build(
 
     # ── STEP 6: Validate ─────────────────────────────────────────
     _rule("Step 6/7 — Validate")
-    rc = run_step("zforge validate", ["zforge", "validate", "--skill", "."], skill_dir)
+    rc = run_step("zforge validate", ["zforge", "validate"], skill_dir)
     if rc != 0:
         _print("  [yellow]⚠ Validation issues found — review above before publishing.[/yellow]" if HAS_RICH else "  ⚠ Validation issues found.")
 

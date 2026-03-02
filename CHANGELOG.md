@@ -293,3 +293,7 @@ Requirement already satisfied: annotated-doc>=0.0.2 in /opt/venv/lib/python3.13/
   replacing unresolved `https://turwttpspnqmhszjwjgs.supabase.co` placeholder that caused
   "marketplace temporarily unavailable" errors for users without env vars set.
 - `db.js` on zero-forge.org also updated with real project URL.
+
+## v2.1.17 — 2026-03-03
+### Fixed
+- **Step 6 Validate bug**: `builder.py` was calling `zforge validate --skill .` but `validate` only accepts a positional argument, not `--skill` flag. Changed to `zforge validate` (uses cwd, already set to skill dir). Step 6 now runs cleanly.
