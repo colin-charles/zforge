@@ -1,3 +1,10 @@
+## [2.1.3] - 2026-03-02
+### Fixed
+- Increased APOL judge HTTP timeout from 30s to 90s — prevents false timeouts on cold-start edge function calls
+### Improved
+- `submit-listing` edge function now detects duplicate submissions (same title + creator)
+  — republishing an existing skill updates the listing instead of creating a duplicate
+
 ## [2.1.0] - 2026-03-02
 ## [2.1.2] - 2026-03-02
 ### Fixed

@@ -112,7 +112,7 @@ def _call_judge(skill_md: str) -> dict:
         _judge_url(),
         headers={"Content-Type": "application/json", "x-zforge-token": _CLI_TOKEN},
         json={"skill_md": skill_md},
-        timeout=30,
+        timeout=90,
     )
     if resp.status_code == 200:
         return resp.json()
