@@ -1,6 +1,10 @@
 import re
 """zforge -- ZeroForge Skill Development CLI."""
 import sys
+import threading
+import urllib.request
+import urllib.error
+import json as _json
 from pathlib import Path
 from typing import Optional
 
@@ -25,9 +29,39 @@ app = typer.Typer(
 
 VERSION = "2.0.0"
 
+def _check_for_update() -> None:
+    """Silently check PyPI for a newer version and nudge the user."""
+    try:
+        req = urllib.request.Request(
+            "https://pypi.org/pypi/zforge/json",
+            headers={"User-Agent": f"zforge/{VERSION}"}
+        )
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            data = _json.loads(resp.read())
+            latest = data["info"]["version"]
+            def _ver(v): return tuple(int(x) for x in v.split("."))
+            if _ver(latest) > _ver(VERSION):
+                print(f"⚡ zforge v{VERSION} → v{latest} available!")
+                print(f"   Run: pip install --upgrade zforge\n")
+    except Exception:
+        pass  # Never crash the CLI over an update check
+
+def _run_update_check() -> None:
+    """Spawn background thread for update check — non-blocking."""
+    threading.Thread(target=_check_for_update, daemon=True).start()
+
+
 # Public read-only Supabase credentials (anon key — safe to embed)
 _PUBLIC_SUPABASE_URL  = "https://turwttpspnqmhszjwjgs.supabase.co"
 _PUBLIC_SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1cnd0dHBzcG5xbWhzemp3amdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMDM3NzAsImV4cCI6MjA4Nzc3OTc3MH0.fBajcHIJZs1lYwfEJRtnHvZdjqZ2u7YGIuPnhyAg85g"
+
+
+@app.callback(invoke_without_command=True)
+def _main(ctx: typer.Context) -> None:
+    """ZeroForge Skill Development CLI -- build, test, validate, and publish skills."""
+    _run_update_check()
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
 
 ASCII_ART = r"""
  ______           ___  __

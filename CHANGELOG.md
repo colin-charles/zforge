@@ -1,5 +1,14 @@
 ## [1.0.3] - 2026-03-02
 
+## [2.0.0] - 2026-03-02
+### Added
+- Self-update checker: zforge now notifies you when a newer version is available on PyPI
+- Runs silently in background thread — never blocks your command
+- Shows upgrade prompt: ⚡ zforge v2.0.0 → vX.X.X available! Run: pip install --upgrade zforge
+
+### Fixed
+- VERSION constant in main.py synced with pyproject.toml (was mismatched)
+
 ## [1.0.9] - 2026-03-02
 ### Fixed
 - `zforge publish` no longer requires SUPABASE_URL or SUPABASE_ANON_KEY env vars
