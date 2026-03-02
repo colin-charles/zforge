@@ -4,6 +4,14 @@
 
 # Changelog
 
+## [1.0.4] - 2026-03-02
+### Fixed
+- `zforge list`, `zforge search`, `zforge install` now work without any setup
+- Public Supabase anon key bundled into CLI (read-only, safe to ship)
+- Removed "must be set" credential error for read-only marketplace commands
+- Only `zforge publish` requires credentials (GitHub OAuth, unchanged)
+
+
 ## [1.0.1] - 2026-03-02
 
 ### Fixed

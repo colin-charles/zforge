@@ -206,11 +206,8 @@ def list_skills(
 ):
     """Browse approved skills on the ZeroForge marketplace."""
     import json, urllib.request, urllib.parse, os
-    supabase_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
-    anon_key = os.environ.get("SUPABASE_ANON_KEY", "")
-    if not supabase_url or not anon_key:
-        print("ERROR: SUPABASE_URL and SUPABASE_ANON_KEY must be set in your .env")
-        raise typer.Exit(1)
+    supabase_url = (os.environ.get("SUPABASE_URL") or _PUBLIC_SUPABASE_URL).rstrip("/")
+    anon_key = os.environ.get("SUPABASE_ANON_KEY") or _PUBLIC_SUPABASE_ANON
 
     params = f"status=eq.approved&order=created_at.desc&limit={limit}"
     if category:
@@ -270,11 +267,8 @@ def search(
 ):
     """Search the ZeroForge marketplace by keyword."""
     import json, urllib.request, urllib.parse, os
-    supabase_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
-    anon_key = os.environ.get("SUPABASE_ANON_KEY", "")
-    if not supabase_url or not anon_key:
-        print("ERROR: SUPABASE_URL and SUPABASE_ANON_KEY must be set in your .env")
-        raise typer.Exit(1)
+    supabase_url = (os.environ.get("SUPABASE_URL") or _PUBLIC_SUPABASE_URL).rstrip("/")
+    anon_key = os.environ.get("SUPABASE_ANON_KEY") or _PUBLIC_SUPABASE_ANON
 
     # Search title and description via ilike
     import urllib.parse
@@ -320,11 +314,8 @@ def install(
 ):
     """Download and install a skill from the ZeroForge marketplace."""
     import json, urllib.request, os, subprocess
-    supabase_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
-    anon_key = os.environ.get("SUPABASE_ANON_KEY", "")
-    if not supabase_url or not anon_key:
-        print("ERROR: SUPABASE_URL and SUPABASE_ANON_KEY must be set")
-        raise typer.Exit(1)
+    supabase_url = (os.environ.get("SUPABASE_URL") or _PUBLIC_SUPABASE_URL).rstrip("/")
+    anon_key = os.environ.get("SUPABASE_ANON_KEY") or _PUBLIC_SUPABASE_ANON
 
     # 1. Fetch listing — try exact title, then fuzzy slug-to-title match
     import urllib.parse as _up
