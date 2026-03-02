@@ -1,3 +1,11 @@
+## [2.0.7] - 2026-03-02
+### Fixed
+- Auto-upgrade falsely printed "Upgraded to vX.X.X" even when pip ran in the wrong
+  Python environment and the installed version never actually changed. Now uses
+  `importlib.metadata.version('zforge')` to verify the version changed after pip
+  completes. If unchanged, warns user and suggests manual upgrade. Cache is cleared
+  so the next session re-checks PyPI.
+
 ## [2.0.1] - 2026-03-02
 
 ## [2.0.3] - 2026-03-02
@@ -105,6 +113,10 @@
 - `zforge hello` — verify installation
 - AgentZero SKILL.md for use as an installable agent skill
 - One-liner install script (`install.sh`)
+
+## [2.0.7] - 2026-03-02
+### Fixed
+- Auto-upgrade falsely reporting "Upgraded to vX.X.X" when pip ran in wrong Python environment (e.g., pipx/venv mismatch). Now uses `importlib.metadata` to verify the installed version actually changed after pip completes. If version is unchanged, warns user and suggests manual upgrade instead of claiming success. Cache is also cleared in this case so the next session re-checks.
 
 ## [2.0.6] - 2026-03-02
 ### Changed

@@ -27,7 +27,7 @@ app = typer.Typer(
     rich_markup_mode="rich" if HAS_RICH else None,
 )
 
-VERSION = "2.0.6"
+VERSION = "2.0.7"
 
 def _check_for_update() -> None:
     """Check PyPI for a newer version — at most once per 24 hours."""
@@ -59,7 +59,23 @@ def _check_for_update() -> None:
             capture_output=True, text=True
         )
         if result.returncode == 0:
-            print(f"✅ Upgraded to zforge v{latest} — restart to use new version.\n")
+            # Verify the upgrade actually landed in this environment
+            import importlib.metadata as _meta
+            try:
+                now_installed = _meta.version("zforge")
+            except Exception:
+                now_installed = VERSION  # can't check, assume ok
+            if now_installed == VERSION:
+                # pip ran but version didn't change — wrong env or already current
+                print(f"⚠️  Upgrade ran but zforge is still v{VERSION} in this environment.")
+                print(f"    Run manually: pip install --upgrade zforge\n")
+                # Reset cache so we don't suppress future checks
+                try:
+                    _cache.unlink(missing_ok=True)
+                except Exception:
+                    pass
+            else:
+                print(f"✅ Upgraded to zforge v{now_installed} — restart to use new version.\n")
         else:
             print(f"⚠️  Auto-upgrade failed. Run: pip install --upgrade zforge\n")
     except Exception:
