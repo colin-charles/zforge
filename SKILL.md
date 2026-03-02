@@ -3,13 +3,13 @@
 ---
 
 **Version:** 2.0.0
-**Author:** ZeroForge
+**Author:** colin-charles
 **AgentZero Version:** 0.8+
 **Category:** Dev Tools
 **Tags:** skill-development, apol, automation, zeroforge, publishing, quality-assurance, cli
 **License:** MIT
 **Price:** Free
-**Updated:** 2026-02-28
+**Updated:** 2026-03-02
 
 ---
 
@@ -25,29 +25,27 @@ zforge --version 2>/dev/null && echo "ALREADY INSTALLED" || echo "NOT INSTALLED"
 
 If output says `ALREADY INSTALLED` → skip to Step 4.
 
-### Step 2 — Clone the ZeroForge repository
+### Step 2 — Clone the zforge repository
 ```bash
-mkdir -p /a0/usr/workdir
-cd /a0/usr/workdir
-git clone https://github.com/colin-charles/zeroforge ZeroForge 2>/dev/null || (cd ZeroForge && git pull)
+git clone https://github.com/colin-charles/zforge ~/.zforge 2>/dev/null || (cd ~/.zforge && git pull)
 ```
 
 ### Step 3 — Install the zforge CLI
 ```bash
-cd /a0/usr/workdir/ZeroForge
+cd ~/.zforge
 python3 -m venv venv
 source venv/bin/activate
-pip install -q -e skills/zeroforge
+pip install -q -e .
 ```
 
 This will:
-- Create a Python venv at `/a0/usr/workdir/ZeroForge/venv`
+- Create a Python venv at `~/.zforge/venv`
 - Install all dependencies (typer, rich)
 - Install the `zforge` command into the venv
 
 ### Step 4 — Activate venv and verify
 ```bash
-source /a0/usr/workdir/ZeroForge/venv/bin/activate
+source ~/.zforge/venv/bin/activate
 zforge --help
 ```
 
@@ -68,7 +66,7 @@ Follow the install steps above if `zforge --version` fails.
 
 ### Step 2 — Activate venv
 ```bash
-source /a0/usr/workdir/ZeroForge/venv/bin/activate
+source ~/.zforge/venv/bin/activate
 ```
 
 ### Step 3 — Run the skill
@@ -85,7 +83,7 @@ zforge run <skill-name>
 
 ### Example — Run the system health report
 ```bash
-source /a0/usr/workdir/ZeroForge/venv/bin/activate
+source ~/.zforge/venv/bin/activate
 zforge run system-health-report
 ```
 
@@ -98,7 +96,7 @@ Copy the terminal output and present it to the user in a readable format.
 ## 📋 Agent Zero — List Available Skills
 
 ```bash
-source /a0/usr/workdir/ZeroForge/venv/bin/activate
+source ~/.zforge/venv/bin/activate
 zforge list
 ```
 
@@ -125,7 +123,7 @@ Designed for ZeroForge contributors, power users, and AI developers who want to 
 | API Keys | LLM API key (already configured in AgentZero) |
 | Environment Variables | `ANTHROPIC_API_KEY` or compatible LLM key via litellm |
 | pip dependencies | `litellm>=1.0.0`, `rich>=13.0.0`, `typer[all]>=0.9.0`, `pydantic>=2.0.0`, `requests>=2.28.0` |
-| Optional | `SUPABASE_ANON_KEY` in `/a0/usr/workdir/ZeroForge/.env` for `zforge publish` |
+| Optional | `SUPABASE_ANON_KEY` in `~/.zforge/.env` for `zforge publish` |
 
 ---
 
@@ -162,24 +160,25 @@ zeroforge/
 
 ## Installation
 
-### Option A — Install via zforge CLI (recommended)
+### Option A — Install via pip (recommended)
 
 ```bash
-# From ZeroForge venv
-source /a0/usr/workdir/ZeroForge/venv/bin/activate
-cd /a0/usr/workdir/ZeroForge/skills/zeroforge
-pip install -e .
+pip install zforge
 ```
 
 Verify installation:
 ```bash
-zforge info
+zforge --version
 ```
 
-### Option B — Manual install
+### Option B — Install from source
 
 ```bash
-bash /a0/usr/workdir/ZeroForge/skills/zeroforge/install.sh
+git clone https://github.com/colin-charles/zforge ~/.zforge
+cd ~/.zforge
+python3 -m venv venv
+source venv/bin/activate
+pip install -e .
 ```
 
 ### Dependencies
@@ -321,7 +320,7 @@ zforge publish ./web_screenshot
 4. POSTs listing payload to Supabase REST API with `status: pending`
 5. Prints listing ID and marketplace URL
 
-**Requires** `SUPABASE_ANON_KEY` in `/a0/usr/workdir/ZeroForge/.env`
+**Requires** `SUPABASE_ANON_KEY` in `~/.zforge/.env`
 
 ---
 
@@ -355,13 +354,13 @@ zforge publish ./web_screenshot
 ## Troubleshooting
 
 **Problem:** `zforge: command not found` after install
-**Solution:** Ensure venv is activated: `source /a0/usr/workdir/ZeroForge/venv/bin/activate`. Re-install: `pip install -e .`
+**Solution:** Ensure venv is activated: `source ~/.zforge/venv/bin/activate`. Re-install: `pip install -e .`
 
 **Problem:** `litellm.AuthenticationError` during `zforge dev`
 **Solution:** Set your API key: `export ANTHROPIC_API_KEY=sk-ant-...` or configure in AgentZero settings.
 
 **Problem:** `SUPABASE_ANON_KEY not found` during `zforge publish`
-**Solution:** Add key to `/a0/usr/workdir/ZeroForge/.env`: `SUPABASE_ANON_KEY=eyJ...`
+**Solution:** Add key to `~/.zforge/.env`: `SUPABASE_ANON_KEY=eyJ...`
 
 **Problem:** `short description must be <= 120 chars` validation error
 **Solution:** Edit `skill.json` → `description.short` and shorten to ≤120 characters.
@@ -386,9 +385,9 @@ zforge publish ./web_screenshot
 
 ## Support
 
-- **GitHub:** https://github.com/colin-charles/zeroforge
-- **Marketplace:** https://zero-forge.org/listing/zeroforge-skill-dev
-- **Issues:** https://github.com/colin-charles/zeroforge/issues
+- **GitHub:** https://github.com/colin-charles/zforge
+- **Marketplace:** https://zero-forge.org/listing/zeroforge
+- **Issues:** https://github.com/colin-charles/zforge/issues
 - **Community:** ZeroForge Discord → #skill-dev channel
 
 ---
