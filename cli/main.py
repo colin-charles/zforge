@@ -31,17 +31,17 @@ try:
     from importlib.metadata import version as _pkg_version
     VERSION = _pkg_version("zforge")
 except Exception:
-    VERSION = "2.1.4"  # fallback only
+    VERSION = "2.1.6"  # fallback only
 
-def _check_for_update() -> None:
-    """Check PyPI for a newer version — at most once per 24 hours."""
-    import subprocess, time, pathlib
+def _check_for_update() -> bool:
+    """Check PyPI for a newer version — synchronous. Returns True if upgraded."""
+    import subprocess, time, pathlib, os
     try:
-        # --- 24h cooldown via cache file ---
+        # --- 5-min cooldown via cache file ---
         _cache = pathlib.Path.home() / ".zforge_update_check"
         now = time.time()
         if _cache.exists() and (now - _cache.stat().st_mtime) < 300:
-            return  # checked within last 24 hours, skip
+            return False  # checked recently, skip
         _cache.touch()  # update timestamp before network call
 
         def _ver(v): return tuple(int(x) for x in v.split("."))
@@ -54,7 +54,7 @@ def _check_for_update() -> None:
             latest = _json.loads(resp.read())["info"]["version"]
 
         if _ver(latest) <= _ver(VERSION):
-            return  # already on latest, nothing to do
+            return False  # already on latest
 
         print(f"⚡ zforge v{VERSION} → v{latest} found. Auto-upgrading...")
         result = subprocess.run(
@@ -63,40 +63,38 @@ def _check_for_update() -> None:
             capture_output=True, text=True
         )
         if result.returncode == 0:
-            # Verify the upgrade actually landed in this environment
             import importlib.metadata as _meta
             try:
                 now_installed = _meta.version("zforge")
             except Exception:
-                now_installed = VERSION  # can't check, assume ok
+                now_installed = VERSION
             if now_installed == VERSION:
-                # pip ran but version didn't change — wrong env or already current
                 print(f"⚠️  Upgrade ran but zforge is still v{VERSION} in this environment.")
                 print(f"    Run manually: pip install --upgrade zforge\n")
-                # Reset cache so we don't suppress future checks
                 try:
                     _cache.unlink(missing_ok=True)
                 except Exception:
                     pass
+                return False
             else:
-                print(f"✅ Upgraded to zforge v{now_installed} — restart to use new version.\n")
+                print(f"✅ Upgraded to zforge v{now_installed} — restarting with new version...\n")
+                return True  # signal caller to re-exec
         else:
             print(f"⚠️  Auto-upgrade failed. Run: pip install --upgrade zforge\n")
+            return False
     except Exception:
-        pass  # Never crash the CLI over an update check
+        return False  # Never crash the CLI over an update check
 
-_update_thread: threading.Thread | None = None
 
 def _run_update_check() -> None:
-    """Run update check in background thread — joins on exit so upgrade completes."""
-    global _update_thread
-    _update_thread = threading.Thread(target=_check_for_update, daemon=False)
-    _update_thread.start()
-    import atexit
-    def _join_update() -> None:
-        if _update_thread and _update_thread.is_alive():
-            _update_thread.join(timeout=5)
-    atexit.register(_join_update)
+    """Run upgrade check synchronously BEFORE command dispatch.
+    If a new version was installed, re-exec this process so the new code runs the command.
+    """
+    import os
+    upgraded = _check_for_update()
+    if upgraded:
+        # Replace current process with fresh one running the new version
+        os.execv(sys.executable, [sys.executable] + sys.argv)
 
 
 # Public read-only Supabase credentials (anon key — safe to embed)

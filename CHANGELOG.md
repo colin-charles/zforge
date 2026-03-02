@@ -1,5 +1,11 @@
 ## [2.1.3] - 2026-03-02
 
+## [2.1.6] - 2026-03-02
+### Fixed
+- Auto-upgrade now runs **synchronously** before command dispatch instead of in a background thread
+- After a successful upgrade, process is **re-exec'd** via `os.execv()` so the new code handles the actual command (fixes APOL score 0.00 caused by old code running after upgrade)
+- Removed stale background thread / atexit join logic
+
 ## [2.1.5] - 2026-03-02
 ### Fixed
 - APOL score always showing 0.00 — CLI was reading `composite_score` but judge returns `composite`
