@@ -3,13 +3,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-SCRIPTS_DIR = Path(__file__).parent.parent / "scripts"
+# Scripts live inside the cli package (pip-installable)
+SCRIPTS_DIR = Path(__file__).parent / "scripts"
 
 
 def run_dev(
     goal: str = "GOAL.md",
     cycles: int = 3,
-    model: str = "anthropic/claude-sonnet-4-5",
+    model: str = "openrouter/anthropic/claude-sonnet-4-5",
     skill_dir: Path | None = None,
 ) -> int:
     """Run 02_run_experiment.py with live streaming output."""
@@ -17,6 +18,11 @@ def run_dev(
     goal_path = Path(goal) if Path(goal).is_absolute() else skill_dir / goal
     name = skill_dir.name
     script = SCRIPTS_DIR / "02_run_experiment.py"
+
+    if not script.exists():
+        print(f"Error: experiment script not found at {script}", file=sys.stderr)
+        print("Try reinstalling: pip install --upgrade zforge", file=sys.stderr)
+        return 1
 
     if not goal_path.exists():
         print(f"Error: GOAL.md not found at {goal_path}", file=sys.stderr)
@@ -32,8 +38,9 @@ def run_dev(
     ]
 
     print(f"\n  ZeroForge Dev -- running APOL for '{name}'")
-    print(f"   Goal: {goal_path}")
-    print(f"   Cycles: {cycles} | Model: {model}\n")
+    print(f"   Goal  : {goal_path}")
+    print(f"   Cycles: {cycles} | Model: {model}")
+    print(f"   Script: {script}\n")
 
     proc = subprocess.Popen(
         cmd,
@@ -50,18 +57,12 @@ def run_dev(
     proc.wait()
 
     if proc.returncode == 0:
-        # Experiments live in ZeroForge r-and-d dir, not inside skill dir
-        from pathlib import Path as _Path
-        _rnd_candidates = [
-            skill_dir.parent.parent / "r-and-d" / "experiments",
-            _Path("/a0/usr/workdir/ZeroForge/r-and-d/experiments"),
-        ]
-        _rnd_base = next((p for p in _rnd_candidates if p.exists()), None)
-        if _rnd_base:
-            _winners = sorted(_rnd_base.glob(f"[0-9][0-9][0-9]_{skill_dir.name}/WINNER.md"))
-            if _winners:
-                _latest = _winners[-1]
-                print(f"\n  Winner saved to: {_latest}")
+        # Winner lives in <skill_dir>/experiments/NNN_name/WINNER.md
+        experiments_dir = skill_dir / "experiments"
+        if experiments_dir.exists():
+            winners = sorted(experiments_dir.glob("[0-9][0-9][0-9]_*/WINNER.md"))
+            if winners:
+                print(f"\n  Winner saved to: {winners[-1]}")
     else:
         print(f"\n  Dev run failed with exit code {proc.returncode}", file=sys.stderr)
 

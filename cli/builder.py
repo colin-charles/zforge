@@ -151,7 +151,7 @@ def generate_goal_md(name: str, description: str, model: str) -> str:
     The richer the GOAL.md, the higher quality the SKILL.md drafts will be.
     """
     if not HAS_LITELLM:
-        raise RuntimeError("litellm not installed. Run: pip install litellm")
+        raise RuntimeError("litellm not installed. Run: pip install zforge[build]")
 
     system_prompt = """You are a senior AgentZero skill architect.
 Your job is to write GOAL.md specification files that are so precise and detailed

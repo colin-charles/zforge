@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zforge"
-version = "2.1.12"
+version = "2.1.14"
 description = "Official CLI for building, validating, and publishing Agent Zero skills to the ZeroForge marketplace"
 readme = "README.md"
 license = "MIT"
@@ -44,3 +44,7 @@ where = ["."]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
+build = ["litellm>=1.0.0"]
+
+[tool.setuptools.package-data]
+"cli" = ["scripts/*.py", "scripts/__init__.py"]

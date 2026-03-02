@@ -1,3 +1,26 @@
+## v2.1.14 — 2026-03-02
+
+### Fixed
+- Added  as optional dependency (Requirement already satisfied: zforge[build] in /opt/venv/lib/python3.13/site-packages (2.1.10)
+Requirement already satisfied: typer>=0.9.0 in /opt/venv/lib/python3.13/site-packages (from zforge[build]) (0.24.1)
+Requirement already satisfied: rich>=13.0.0 in /opt/venv/lib/python3.13/site-packages (from zforge[build]) (14.3.3)
+Requirement already satisfied: markdown-it-py>=2.2.0 in /opt/venv/lib/python3.13/site-packages (from rich>=13.0.0->zforge[build]) (4.0.0)
+Requirement already satisfied: pygments<3.0.0,>=2.13.0 in /opt/venv/lib/python3.13/site-packages (from rich>=13.0.0->zforge[build]) (2.19.2)
+Requirement already satisfied: mdurl~=0.1 in /opt/venv/lib/python3.13/site-packages (from markdown-it-py>=2.2.0->rich>=13.0.0->zforge[build]) (0.1.2)
+Requirement already satisfied: click>=8.2.1 in /opt/venv/lib/python3.13/site-packages (from typer>=0.9.0->zforge[build]) (8.3.1)
+Requirement already satisfied: shellingham>=1.3.0 in /opt/venv/lib/python3.13/site-packages (from typer>=0.9.0->zforge[build]) (1.5.4)
+Requirement already satisfied: annotated-doc>=0.0.2 in /opt/venv/lib/python3.13/site-packages (from typer>=0.9.0->zforge[build]) (0.0.4)) — required for  and  commands
+- Included  in pip package (was missing in previous releases)
+- Improved error message when litellm not installed: now shows Requirement already satisfied: zforge[build] in /opt/venv/lib/python3.13/site-packages (2.1.12)
+Requirement already satisfied: typer>=0.9.0 in /opt/venv/lib/python3.13/site-packages (from zforge[build]) (0.24.1)
+Requirement already satisfied: rich>=13.0.0 in /opt/venv/lib/python3.13/site-packages (from zforge[build]) (14.3.3)
+Requirement already satisfied: markdown-it-py>=2.2.0 in /opt/venv/lib/python3.13/site-packages (from rich>=13.0.0->zforge[build]) (4.0.0)
+Requirement already satisfied: pygments<3.0.0,>=2.13.0 in /opt/venv/lib/python3.13/site-packages (from rich>=13.0.0->zforge[build]) (2.19.2)
+Requirement already satisfied: mdurl~=0.1 in /opt/venv/lib/python3.13/site-packages (from markdown-it-py>=2.2.0->rich>=13.0.0->zforge[build]) (0.1.2)
+Requirement already satisfied: click>=8.2.1 in /opt/venv/lib/python3.13/site-packages (from typer>=0.9.0->zforge[build]) (8.3.1)
+Requirement already satisfied: shellingham>=1.3.0 in /opt/venv/lib/python3.13/site-packages (from typer>=0.9.0->zforge[build]) (1.5.4)
+Requirement already satisfied: annotated-doc>=0.0.2 in /opt/venv/lib/python3.13/site-packages (from typer>=0.9.0->zforge[build]) (0.0.4)
+
 ## v2.1.8 — 2026-03-02
 
 ## [2.1.12] - 2026-03-02
@@ -185,6 +208,17 @@
 
 
 # Changelog
+
+## v2.1.13 — 2026-03-02
+### Fixed
+- **Critical:** Added missing `02_run_experiment.py` script to pip package — `zforge build` and `zforge dev` now work after `pip install zforge`
+- Fixed `runner.py` SCRIPTS_DIR path (was resolving to wrong parent directory)
+- Fixed winner path detection to use `<skill_dir>/experiments/` (consistent with builder.py)
+
+### Added
+- `litellm` added as explicit dependency in pyproject.toml
+- `cli/scripts/` included in package_data for pip distribution
+
 
 ## [2.0.9] - 2026-03-02
 ### Fixed
