@@ -1,4 +1,11 @@
 ## [2.1.3] - 2026-03-02
+
+## [2.1.4] - 2026-03-02
+### Fixed
+- VERSION constant now read dynamically from importlib.metadata instead of hardcoded string
+- Eliminates version mismatch bug where auto-upgrade could not detect installed version correctly
+- Fallback to "2.1.4" only if metadata unavailable
+
 ### Fixed
 - Increased APOL judge HTTP timeout from 30s to 90s — prevents false timeouts on cold-start edge function calls
 ### Improved

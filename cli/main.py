@@ -27,7 +27,11 @@ app = typer.Typer(
     rich_markup_mode="rich" if HAS_RICH else None,
 )
 
-VERSION = "2.1.2"
+try:
+    from importlib.metadata import version as _pkg_version
+    VERSION = _pkg_version("zforge")
+except Exception:
+    VERSION = "2.1.4"  # fallback only
 
 def _check_for_update() -> None:
     """Check PyPI for a newer version — at most once per 24 hours."""
