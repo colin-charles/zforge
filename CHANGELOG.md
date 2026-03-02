@@ -1,3 +1,12 @@
+## v2.1.8 — 2026-03-02
+
+### Fixed
+- `zforge install` now auto-detects Agent Zero environment: installs to `/a0/skills/` when it exists, falling back to `./skills/` for standalone use — fixes skill not found in `skills_tool`
+- Success message after install now hints Agent Zero users to reload skills
+- `zforge hello` example updated from removed `system-health-report` to `install-zforge`
+
+---
+
 ## [2.1.3] - 2026-03-02
 
 ## [2.1.7] - 2026-03-02

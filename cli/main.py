@@ -31,7 +31,7 @@ try:
     from importlib.metadata import version as _pkg_version
     VERSION = _pkg_version("zforge")
 except Exception:
-    VERSION = "2.1.6"  # fallback only
+    VERSION = "2.1.8"  # fallback only
 
 def _check_for_update() -> bool:
     """Check PyPI for a newer version — synchronous. Returns True if upgraded."""
@@ -134,8 +134,8 @@ def hello():
             "[bold green]✓ ZeroForge CLI is installed and working![/bold green]\n\n"
             "[bold]Here's what to do next:[/bold]\n\n"
             "  [bold cyan]STEP 1[/bold cyan]  Browse skills at [underline]https://zero-forge.org/listings/[/underline]\n"
-            "  [bold cyan]STEP 2[/bold cyan]  Install a skill:     [yellow]zforge install system-health-report[/yellow]\n"
-            "  [bold cyan]STEP 3[/bold cyan]  Run it:              [yellow]zforge run system-health-report[/yellow]\n\n"
+            "  [bold cyan]STEP 2[/bold cyan]  Install a skill:     [yellow]zforge install install-zforge[/yellow]\n"
+            "  [bold cyan]STEP 3[/bold cyan]  Run it:              [yellow]zforge run install-zforge[/yellow]\n\n"
             "  [bold cyan]FORGE[/bold cyan]   Build your own:      [yellow]zforge build my-skill-name[/yellow]\n\n"
             "[dim]Full guide -> https://zero-forge.org/start/[/dim]",
             title="[bold]// WELCOME TO ZEROFORGE[/bold]",
@@ -150,8 +150,8 @@ def hello():
         print()
         print("What to do next:")
         print("  STEP 1  Browse skills:       https://zero-forge.org/listings/")
-        print("  STEP 2  Install a skill:     zforge install system-health-report")
-        print("  STEP 3  Run it:              zforge run system-health-report")
+        print("  STEP 2  Install a skill:     zforge install install-zforge")
+        print("  STEP 3  Run it:              zforge run install-zforge")
         print("  FORGE   Build your own:      zforge build my-skill-name")
         print()
         print("Full guide: https://zero-forge.org/start/")
@@ -453,8 +453,9 @@ def install(
     if output_dir:
         parent = Path(output_dir).resolve()
     else:
-        # Default: ./skills/ relative to cwd
-        parent = Path.cwd() / "skills"
+        # Auto-detect Agent Zero environment — install to /a0/skills/ if it exists
+        _a0_skills = Path("/a0/skills")
+        parent = _a0_skills if _a0_skills.exists() else Path.cwd() / "skills"
     parent.mkdir(parents=True, exist_ok=True)
     # Use sanitized title as directory name
     dir_name = re.sub(r'[^\w]+', '_', title.lower()).strip('_')
@@ -544,12 +545,18 @@ def install(
         subprocess.run(["bash", str(install_sh)], cwd=str(target))
 
     # 5. Done
+    _a0_note = "  [dim]Agent Zero: reload skills or use skills_tool to access it.[/dim]" if str(target).startswith("/a0/skills") else ""
+    _a0_note_plain = "  Agent Zero: reload skills or use skills_tool to access it." if str(target).startswith("/a0/skills") else ""
     if HAS_RICH:
         console.print(f"\n[bold green]✓ Installed:[/bold green] [bold yellow]{slug}[/bold yellow] → {target}")
         console.print(f"  [dim]Run it: python {target}/scripts/main.py[/dim]")
+        if _a0_note:
+            console.print(_a0_note)
     else:
         print(f"\n✓ Installed {slug} → {target}")
         print(f"  Run: python {target}/scripts/main.py")
+        if _a0_note_plain:
+            print(_a0_note_plain)
 
 
 
@@ -599,7 +606,7 @@ def setup():
             console.print()
             console.print("[bold]You are ready! Try:[/bold]")
             console.print("  [cyan]zforge list[/cyan]")
-            console.print("  [cyan]zforge run system-health-report[/cyan]")
+            console.print("  [cyan]zforge run install-zforge[/cyan]")
             console.print("  [cyan]zforge build my-skill --desc 'what it does'[/cyan]")
         else:
             print(f"Already configured (ends in ...{existing_key[-6:]})")
@@ -648,7 +655,7 @@ def setup():
         console.print()
         console.print("Try these commands:")
         console.print("  [cyan]zforge list[/cyan]")
-        console.print("  [cyan]zforge run system-health-report[/cyan]")
+        console.print("  [cyan]zforge run install-zforge[/cyan]")
         console.print("  [cyan]zforge build my-skill --desc 'what it does'[/cyan]")
     else:
         print("API key saved! Try: zforge list")
