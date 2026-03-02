@@ -106,6 +106,11 @@
 - AgentZero SKILL.md for use as an installable agent skill
 - One-liner install script (`install.sh`)
 
+## [2.0.6] - 2026-03-02
+### Changed
+- Reduced update check cooldown from 24h to 5 minutes (better for rapid dev releases)
+
+
 ## [2.0.5] - 2026-03-02
 ### Fixed
 - Auto-upgrade no longer fires when already on latest version

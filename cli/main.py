@@ -27,7 +27,7 @@ app = typer.Typer(
     rich_markup_mode="rich" if HAS_RICH else None,
 )
 
-VERSION = "2.0.5"
+VERSION = "2.0.6"
 
 def _check_for_update() -> None:
     """Check PyPI for a newer version — at most once per 24 hours."""
@@ -36,7 +36,7 @@ def _check_for_update() -> None:
         # --- 24h cooldown via cache file ---
         _cache = pathlib.Path.home() / ".zforge_update_check"
         now = time.time()
-        if _cache.exists() and (now - _cache.stat().st_mtime) < 86400:
+        if _cache.exists() and (now - _cache.stat().st_mtime) < 300:
             return  # checked within last 24 hours, skip
         _cache.touch()  # update timestamp before network call
 
