@@ -2,6 +2,9 @@
 """zforge publish -- validate, package, upload, and publish a skill to ZeroForge marketplace."""
 from __future__ import annotations
 
+# Internal validator — CERTIFIED badge is earned, not self-reported
+from cli.validator import run_validate as _run_validator
+
 import json
 import os
 import sys
@@ -385,7 +388,21 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
         sys.exit(1)
     _print("  [green]skill.json validation passed[/green]")
 
-    # 3. Load APOL cert
+    # 3. Run validator internally — CERTIFIED is earned by passing, not self-reported in skill.json
+    _print("  Running validator for CERTIFIED badge ...")
+    try:
+        _val_result = _run_validator(skill_dir)
+    except SystemExit as _se:
+        _val_result = int(str(_se.code)) if _se.code is not None else 1
+    except Exception:
+        _val_result = 1
+    _validator_passed = (_val_result == 0)
+    if _validator_passed:
+        _print("  [green]Validator passed — listing will receive CERTIFIED badge[/green]")
+    else:
+        _print("  [yellow]Validator issues found — listing will be UNCERTIFIED (run zforge validate to fix)[/yellow]")
+
+    # Load optional APOL cert scores (not required for certification)
     cert = _load_apol_cert(skill_dir)
     cert_id = getattr(quality, 'apol_cert_id', None) or cert.get('cert_id')
     apol_score = getattr(quality, 'apol_composite_score', None) or cert.get('composite_score')
@@ -443,11 +460,11 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
         "tags": tags_list,
         "price": "free",
         "status": "pending",
-        "apol_certified": bool(getattr(quality, 'apol_certified', False)),
+        "apol_certified": _validator_passed,  # set by internal validator, not self-reported
         "apol_cert": {
             "apol_composite_score": apol_score,
             "apol_cert_id": cert_id,
-        } if getattr(quality, 'apol_certified', False) else None,
+        } if _validator_passed else None,
     }
 
     # 10. Summary panel

@@ -92,6 +92,14 @@
 
 # Changelog
 
+## [2.0.9] - 2026-03-02
+### Fixed
+- CERTIFIED badge now earned by passing `zforge validate` internally during publish — not self-reported from skill.json
+- Closes security hole where anyone could set `apol_certified: true` manually in skill.json to fake a CERTIFIED badge
+- Publisher now runs `run_validate()` before building the payload; badge is set server-side based on actual validation result
+- Creators who run `zforge publish` with a passing skill will automatically receive the CERTIFIED badge
+
+
 ## [1.0.4] - 2026-03-02
 ### Fixed
 - `zforge list`, `zforge search`, `zforge install` now work without any setup
