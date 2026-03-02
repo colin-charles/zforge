@@ -27,6 +27,10 @@ except ImportError:
 _PUBLIC_SUPABASE_URL  = "https://turwttpspnqmhszjwjgs.supabase.co"
 _PUBLIC_SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1cnd0dHBzcG5xbWhzemp3amdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMDM3NzAsImV4cCI6MjA4Nzc3OTc3MH0.fBajcHIJZs1lYwfEJRtnHvZdjqZ2u7YGIuPnhyAg85g"
 
+# ── Edge Function endpoint (routes submissions through service role — bypasses RLS)
+_SUBMIT_EDGE_URL = "https://turwttpspnqmhszjwjgs.supabase.co/functions/v1/submit-listing"
+_CLI_TOKEN       = "zforge-submit-v2"  # public abuse-gate token, not a secret
+
 
 try:
     from rich.console import Console
@@ -263,7 +267,7 @@ def _load_apol_cert(skill_dir: Path) -> dict:
 # Supabase REST submission
 # ---------------------------------------------------------------------------
 
-# SUPABASE_REST_URL built dynamically inside _submit_to_supabase after env load
+# SUPABASE_REST_URL no longer used — submissions route through Edge Function
 SUPABASE_DASHBOARD = "https://supabase.com/dashboard/project/turwttpspnqmhszjwjgs/editor"
 
 RLS_FIX_SQL = """
@@ -272,69 +276,55 @@ CREATE POLICY IF NOT EXISTS "Public submit listings"
 """.strip()
 
 
-def _print_rls_fix():
-    _print("")
-    _print("  [bold yellow]ACTION REQUIRED: Apply missing RLS policy[/bold yellow]")
-    _print(f"  Open: {SUPABASE_DASHBOARD}")
-    _print("  Paste and run:")
-    if HAS_RICH:
-        console.print(Syntax(RLS_FIX_SQL, 'sql', theme='monokai'))
-    else:
-        print(RLS_FIX_SQL)
-    _print("  Then run `zforge publish` again.")
 
-
-def _check_keys() -> tuple[str, str]:
-    anon_key = os.environ.get('SUPABASE_ANON_KEY') or _PUBLIC_SUPABASE_ANON  
-    service_key = os.environ.get('SUPABASE_SERVICE_KEY', '')  
-    if not anon_key:
-        _print("  [bold red]SUPABASE_ANON_KEY not found[/bold red]")
-    return anon_key, service_key
-
-
-def _submit_to_supabase(payload: dict, anon_key: str, service_key: str) -> dict:
+def _submit_to_edge_function(payload: dict) -> dict:
+    """Submit listing via Supabase Edge Function (service role — bypasses RLS)."""
     if not HAS_REQUESTS:
-        raise RuntimeError("'requests' not installed")
-    # Build URL dynamically (env fully loaded by this point)
-    _base = (os.environ.get("SUPABASE_URL") or _PUBLIC_SUPABASE_URL).rstrip("/")
-    if not _base:
-        raise RuntimeError("SUPABASE_URL not set and public fallback is missing — contact support")
-    SUPABASE_REST_URL = _base + "/rest/v1/listings"
-    # Service key must be a proper JWT (starts with eyJ), not UUID/placeholder
-    svc_valid = (service_key
-                 and not _is_placeholder(service_key)
-                 and service_key.startswith('eyJ'))
-    auth_key = service_key if svc_valid else anon_key
+        raise RuntimeError("pip install requests")
+
+    # Allow override via env var for self-hosting
+    edge_url = os.environ.get("ZFORGE_SUBMIT_URL") or _SUBMIT_EDGE_URL
+    if not edge_url:
+        raise RuntimeError(
+            "ZFORGE_SUBMIT_URL not set and public fallback is missing — contact support"
+        )
+
     headers = {
-        "apikey": auth_key,
-        "Authorization": f"Bearer {auth_key}",
         "Content-Type": "application/json",
-        "Prefer": "return=representation",
+        "x-zforge-token": _CLI_TOKEN,
     }
-    resp = requests.post(SUPABASE_REST_URL, headers=headers, json=payload, timeout=30)
-    if resp.status_code in (200, 201):
-        data = resp.json()
-        return data[0] if isinstance(data, list) and data else data
-    error_text = resp.text[:500]
+
+    _print("  Connecting to ZeroForge marketplace ...")
     try:
-        err_data = resp.json()
-        pg_code = err_data.get('code', '')  
-        err_msg = err_data.get('message', error_text)
+        resp = requests.post(edge_url, headers=headers, json=payload, timeout=30)
+    except requests.exceptions.ConnectionError:
+        raise RuntimeError("Network error — check your internet connection")
+    except requests.exceptions.Timeout:
+        raise RuntimeError("Request timed out — ZeroForge may be temporarily unavailable")
+
+    if resp.status_code == 201:
+        return resp.json()
+
+    try:
+        err = resp.json()
+        msg = err.get("error") or err.get("message") or resp.text[:300]
     except Exception:
-        pg_code = ''
-        err_msg = error_text
-    if resp.status_code == 403 or pg_code == '42501' or 'row-level security' in err_msg.lower():
-        _print_rls_fix()
-        raise RuntimeError(f"RLS policy missing (HTTP {resp.status_code}).")
+        msg = resp.text[:300]
+
     if resp.status_code == 401:
-        _print("  [bold red]Auth failed (401) -- JWT service key required[/bold red]")
-        raise RuntimeError("Auth failed (HTTP 401).")
-    raise RuntimeError(f"Supabase POST failed [{resp.status_code}]: {err_msg}")
+        raise RuntimeError(
+            "CLI token rejected — please upgrade: pip install --upgrade zforge"
+        )
+    if resp.status_code == 422:
+        raise RuntimeError(f"Validation failed: {msg}")
+    if resp.status_code == 429:
+        raise RuntimeError("Rate limit exceeded — max 10 submissions per hour")
+    if resp.status_code == 503:
+        raise RuntimeError(
+            "ZeroForge marketplace is temporarily unavailable — try again later"
+        )
+    raise RuntimeError(f"Submission failed [{resp.status_code}]: {msg}")
 
-
-# ---------------------------------------------------------------------------
-# Main entry point
-# ---------------------------------------------------------------------------
 
 def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str = ""):
     skill_dir = Path(skill_dir_arg).resolve()
@@ -434,7 +424,7 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
     # 8. Upload to Supabase Storage (always attempt, even in dry_run preview)
     storage_url = None
     if not dry_run:
-        anon_key, service_key = _check_keys()
+        service_key = os.environ.get("SUPABASE_SERVICE_KEY", "")  # optional: enables ZIP storage upload
         storage_url = upload_to_storage(zip_path, skill_name, service_key, supabase_url)
     else:
         _print("  [dim]DRY RUN: storage upload skipped[/dim]")
@@ -487,7 +477,7 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
     # 11. Submit listing to Supabase
     _print("  Submitting to ZeroForge marketplace ...")
     try:
-        result = _submit_to_supabase(payload, anon_key, service_key)
+        result = _submit_to_edge_function(payload)
     except RuntimeError as e:
         _print(f"  [bold red]Submission failed: {e}[/bold red]")
         sys.exit(1)

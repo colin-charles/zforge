@@ -1,5 +1,23 @@
 ## [2.0.1] - 2026-03-02
 ### Changed
+## [2.0.2] - 2026-03-02
+
+### Fixed
+- `zforge publish` now routes submissions through a Supabase Edge Function instead of
+  hitting the Supabase REST API directly — eliminates the RLS policy block that caused
+  `HTTP 403 / row-level security` errors for creators using the anon key.
+- Removed dependency on `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_KEY` for submission;
+  the Edge Function uses service role internally (server-side only, never exposed).
+- Storage ZIP upload still works for creators who have `SUPABASE_SERVICE_KEY` set;
+  gracefully skips if not configured.
+
+### Changed
+- `_submit_to_supabase()` replaced by `_submit_to_edge_function()` in `publisher.py`.
+- Added `_SUBMIT_EDGE_URL` and `_CLI_TOKEN` constants for Edge Function routing.
+- CLI token `zforge-submit-v2` acts as basic abuse gate; real protection comes from
+  rate limiting (10/hour per IP) + admin approval before listings go live.
+
+
 - Auto-upgrade on version check: instead of nudging users to upgrade manually,
   the CLI now silently runs `pip install --upgrade zforge` automatically when
   a newer version is found on PyPI. Users see a confirmation message and are
