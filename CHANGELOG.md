@@ -1,4 +1,11 @@
 ## [2.1.0] - 2026-03-02
+## [2.1.1] - 2026-03-02
+### Fixed
+- `validator.py` rewritten cleanly — resolved multiple SyntaxError crashes caused by
+  literal newline characters embedded inside f-string literals (Python 3.13 strict parsing)
+- All output helpers (`_ok`, `_warn`, `_fail`, `_header`) now use plain string concatenation
+- Publish command no longer crashes before starting on Python 3.12+
+
 
 ### Added - APOL Quality Certification in `zforge publish`
 
