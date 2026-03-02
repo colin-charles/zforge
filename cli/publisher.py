@@ -256,7 +256,7 @@ def _load_apol_cert(skill_dir: Path) -> dict:
 # Supabase REST submission
 # ---------------------------------------------------------------------------
 
-SUPABASE_REST_URL = os.environ.get("SUPABASE_URL", "").rstrip("/") + "/rest/v1/listings"
+# SUPABASE_REST_URL built dynamically inside _submit_to_supabase after env load
 SUPABASE_DASHBOARD = "https://supabase.com/dashboard/project/turwttpspnqmhszjwjgs/editor"
 
 RLS_FIX_SQL = """
@@ -288,7 +288,15 @@ def _check_keys() -> tuple[str, str]:
 def _submit_to_supabase(payload: dict, anon_key: str, service_key: str) -> dict:
     if not HAS_REQUESTS:
         raise RuntimeError("'requests' not installed")
-    svc_valid = service_key and not _is_placeholder(service_key)
+    # Build URL dynamically (env fully loaded by this point)
+    _base = os.environ.get("SUPABASE_URL", "").rstrip("/")
+    if not _base:
+        raise RuntimeError("SUPABASE_URL not set in environment")
+    SUPABASE_REST_URL = _base + "/rest/v1/listings"
+    # Service key must be a proper JWT (starts with eyJ), not UUID/placeholder
+    svc_valid = (service_key
+                 and not _is_placeholder(service_key)
+                 and service_key.startswith('eyJ'))
     auth_key = service_key if svc_valid else anon_key
     headers = {
         "apikey": auth_key,
