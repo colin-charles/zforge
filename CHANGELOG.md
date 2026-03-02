@@ -1,6 +1,12 @@
 ## [1.0.3] - 2026-03-02
 ### Fixed
 - publisher.py now includes `apol_certified` and `apol_cert` fields in Supabase payload so certified skills display the ZFORGE VERIFIED badge on the marketplace
+## [1.0.5] - 2026-03-02
+### Changed
+- Added comprehensive PyPI metadata: author, homepage, repository, classifiers, keywords
+- Improved package discoverability and legitimacy signals on PyPI
+- README: clarified pip install as primary installation method
+
 
 # Changelog
 
