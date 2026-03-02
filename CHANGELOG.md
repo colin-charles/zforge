@@ -1,5 +1,11 @@
 ## [2.1.3] - 2026-03-02
 
+## [2.1.7] - 2026-03-02
+### Fixed
+- KPI5 display now correctly shows "✅ READY" / "❌ NOT READY" instead of "1/5"
+- Fixed variable name collision where inner kpi5 label overwrote outer APOL title label
+- Non-rich fallback display also corrected for KPI5 binary score
+
 ## [2.1.6] - 2026-03-02
 ### Fixed
 - Auto-upgrade now runs **synchronously** before command dispatch instead of in a background thread

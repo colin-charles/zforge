@@ -151,15 +151,26 @@ def _show_score(score: float, kpis: dict, summary: str, cycle: int = 0):
         for kpi_key, kpi_data in kpis.items():
             s = kpi_data.get("score", 0)
             note = kpi_data.get("feedback", "")
-            colour = "green" if s >= 4 else ("yellow" if s >= 3 else "red")
-            t.add_row(kpi_key.upper(), f"[{colour}]{s}/5[/{colour}]", note)
+            if kpi_key == "kpi5":
+                colour = "green" if s == 1 else "red"
+                kpi5_label = "✅ READY" if s == 1 else "❌ NOT READY"
+                t.add_row(kpi_key.upper(), f"[{colour}]{kpi5_label}[/{colour}]", note)
+            else:
+                colour = "green" if s >= 4 else ("yellow" if s >= 3 else "red")
+                t.add_row(kpi_key.upper(), f"[{colour}]{s}/5[/{colour}]", note)
         score_colour = "green" if score >= CERTIFIED_THRESHOLD else "yellow"
         title = f"[bold {score_colour}]APOL Score: {score:.2f} / 1.00  —  {label}{cycle_str}[/bold {score_colour}]"
         console.print(Panel(t, title=title, subtitle=f"[dim]{summary}[/dim]", border_style=score_colour))
     else:
         print(f"\n  APOL Score: {score:.2f} / 1.00  —  {label}{cycle_str}")
         for kpi_key, kpi_data in kpis.items():
-            print(f"    {kpi_key.upper()}: {kpi_data.get('score',0)}/5  — {kpi_data.get('feedback','')}")
+            s = kpi_data.get('score', 0)
+            fb = kpi_data.get('feedback', '')
+            if kpi_key == "kpi5":
+                kpi5_label = "✅ READY" if s == 1 else "❌ NOT READY"
+                print(f"    {kpi_key.upper()}: {kpi5_label}  — {fb}")
+            else:
+                print(f"    {kpi_key.upper()}: {s}/5  — {fb}")
         print(f"  Summary: {summary}")
 
 
