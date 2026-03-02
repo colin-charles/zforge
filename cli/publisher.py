@@ -56,9 +56,10 @@ def _rule(title: str):
 
 
 def load_env():
-    """Load .env from ZeroForge root or ~/.env into os.environ."""
+    """Load env from secrets.env (Agent Zero secrets store) or .env fallback."""
     candidates = [
-        Path('/a0/usr/workdir/ZeroForge/.env'),
+        Path('/a0/usr/secrets.env'),          # Agent Zero secrets store (preferred)
+        Path('/a0/usr/workdir/ZeroForge/.env'), # project .env fallback
         Path.home() / '.env',
     ]
     for env_path in candidates:
