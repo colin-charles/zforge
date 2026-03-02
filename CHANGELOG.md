@@ -1,3 +1,18 @@
+## [2.1.0] - 2026-03-02
+
+### Added - APOL Quality Certification in `zforge publish`
+
+- Interactive A/B decision point during publish flow:
+  - Skills scoring >= 0.80 on APOL LLM judge are auto-CERTIFIED immediately
+  - Skills scoring < 0.80 prompt creator: A) publish UNCERTIFIED or B) run APOL tournament
+- Option B runs the full tournament pipeline preserving creator intent — only documentation
+  quality is improved; skill purpose and content never changed without explicit creator approval
+- Diff shown before any SKILL.md changes are written
+- Graceful fallback to structural validator if APOL edge functions unavailable
+- Structural compliance check now independent from quality certification badge
+
+---
+
 ## [2.0.8] - 2026-03-02
 ### Fixed
 - `publisher.py`: `creator_handle` now included in submission payload, enabling correct

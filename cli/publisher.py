@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # Internal validator — CERTIFIED badge is earned, not self-reported
 from cli.validator import run_validate as _run_validator
+from cli.apol import apol_certify, ApolResult
 
 import json
 import os
@@ -388,24 +389,33 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
         sys.exit(1)
     _print("  [green]skill.json validation passed[/green]")
 
-    # 3. Run validator internally — CERTIFIED is earned by passing, not self-reported in skill.json
-    _print("  Running validator for CERTIFIED badge ...")
+    # 3a. Structural validator — compliance gate (required fields / sections)
+    _print("  Running structural compliance check ...")
     try:
         _val_result = _run_validator(skill_dir)
     except SystemExit as _se:
         _val_result = int(str(_se.code)) if _se.code is not None else 1
     except Exception:
         _val_result = 1
-    _validator_passed = (_val_result == 0)
-    if _validator_passed:
-        _print("  [green]Validator passed — listing will receive CERTIFIED badge[/green]")
+    _structural_passed = (_val_result == 0)
+    if _structural_passed:
+        _print("  [green]Structural compliance passed[/green]")
     else:
-        _print("  [yellow]Validator issues found — listing will be UNCERTIFIED (run zforge validate to fix)[/yellow]")
+        _print("  [yellow]Structural issues found — run 'zforge validate' to review (continuing ...)[/yellow]")
 
-    # Load optional APOL cert scores (not required for certification)
-    cert = _load_apol_cert(skill_dir)
-    cert_id = getattr(quality, 'apol_cert_id', None) or cert.get('cert_id')
-    apol_score = getattr(quality, 'apol_composite_score', None) or cert.get('composite_score')
+    # 3b. APOL quality certification — interactive A/B decision point
+    _apol_result = apol_certify(skill_dir)
+    _apol_certified = _apol_result.certified
+    apol_score = _apol_result.score if not _apol_result.skipped else None
+    cert_id    = _apol_result.cert_id
+
+    # Graceful fallback: if APOL edge functions unavailable, use structural result
+    if _apol_result.skipped:
+        _print("  [dim]APOL scoring unavailable — falling back to structural validator for certification[/dim]")
+        _apol_certified = _structural_passed
+        _legacy_cert    = _load_apol_cert(skill_dir)
+        cert_id         = getattr(quality, 'apol_cert_id', None) or _legacy_cert.get('cert_id')
+        apol_score      = getattr(quality, 'apol_composite_score', None) or _legacy_cert.get('composite_score')
 
     # 4. Category mapping
     CATEGORY_MAP = {
@@ -460,7 +470,7 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
         "tags": tags_list,
         "price": "free",
         "status": "pending",
-        "apol_certified": _validator_passed,  # set by internal validator, not self-reported
+        "apol_certified": _apol_certified,   # set by APOL judge, not self-reported
         "apol_cert": {
             "apol_composite_score": apol_score,
             "apol_cert_id": cert_id,
