@@ -31,7 +31,7 @@ try:
     from importlib.metadata import version as _pkg_version
     VERSION = _pkg_version("zforge")
 except Exception:
-    VERSION = "2.1.9"  # fallback only
+    VERSION = "2.1.10"  # fallback only
 
 def _check_for_update() -> bool:
     """Check PyPI for a newer version — synchronous. Returns True if upgraded."""
@@ -40,7 +40,7 @@ def _check_for_update() -> bool:
         # --- 5-min cooldown via cache file ---
         _cache = pathlib.Path.home() / ".zforge_update_check"
         now = time.time()
-        if _cache.exists() and (now - _cache.stat().st_mtime) < 300:
+        if _cache.exists() and (now - _cache.stat().st_mtime) < 60:
             return False  # checked recently, skip
         _cache.touch()  # update timestamp before network call
 

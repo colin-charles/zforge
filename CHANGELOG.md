@@ -1,5 +1,10 @@
 ## v2.1.8 — 2026-03-02
 
+## [2.1.10] - 2026-03-02
+### Changed
+- Reduced auto-upgrade cooldown cache from 5 minutes to 1 minute
+
+
 ## [2.1.9] - 2026-03-02
 ### Fixed
 - Auto-upgrade now fires `os.execv` immediately after pip succeeds (rc==0)
