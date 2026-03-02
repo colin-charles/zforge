@@ -27,7 +27,7 @@ app = typer.Typer(
     rich_markup_mode="rich" if HAS_RICH else None,
 )
 
-VERSION = "2.0.1"
+VERSION = "2.0.3"
 
 def _check_for_update() -> None:
     """Check PyPI for a newer version and auto-upgrade if one is found."""
@@ -55,9 +55,18 @@ def _check_for_update() -> None:
     except Exception:
         pass  # Never crash the CLI over an update check
 
+_update_thread: threading.Thread | None = None
+
 def _run_update_check() -> None:
-    """Run update check in background thread — non-blocking."""
-    threading.Thread(target=_check_for_update, daemon=True).start()
+    """Run update check in background thread — joins on exit so upgrade completes."""
+    global _update_thread
+    _update_thread = threading.Thread(target=_check_for_update, daemon=False)
+    _update_thread.start()
+    import atexit
+    def _join_update() -> None:
+        if _update_thread and _update_thread.is_alive():
+            _update_thread.join(timeout=5)
+    atexit.register(_join_update)
 
 
 # Public read-only Supabase credentials (anon key — safe to embed)

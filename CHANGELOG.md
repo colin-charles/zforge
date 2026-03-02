@@ -1,4 +1,9 @@
 ## [2.0.1] - 2026-03-02
+
+## [2.0.3] - 2026-03-02
+### Fixed
+- **Auto-upgrade race condition**: The update checker ran as a daemon thread, which was killed by the OS before it could complete the PyPI HTTP request (3s timeout) + pip install on fast commands like `zforge list`. Fixed by switching to a non-daemon thread and registering an `atexit` handler that joins the thread with a 5s timeout — ensuring the upgrade always completes before the process exits.
+
 ### Changed
 ## [2.0.2] - 2026-03-02
 
