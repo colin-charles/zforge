@@ -474,7 +474,7 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
         "apol_cert": {
             "apol_composite_score": apol_score,
             "apol_cert_id": cert_id,
-        } if _validator_passed else None,
+        } if _structural_passed else None,
     }
 
     # 10. Summary panel

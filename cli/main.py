@@ -27,7 +27,7 @@ app = typer.Typer(
     rich_markup_mode="rich" if HAS_RICH else None,
 )
 
-VERSION = "2.1.1"
+VERSION = "2.1.2"
 
 def _check_for_update() -> None:
     """Check PyPI for a newer version — at most once per 24 hours."""

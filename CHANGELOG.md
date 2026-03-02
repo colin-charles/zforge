@@ -1,4 +1,9 @@
 ## [2.1.0] - 2026-03-02
+## [2.1.2] - 2026-03-02
+### Fixed
+- `publisher.py` line 477: `NameError: _validator_passed is not defined`
+- Replaced undefined `_validator_passed` with the already-defined `_structural_passed`
+- `zforge publish` no longer crashes after packaging when APOL scoring is skipped
 ## [2.1.1] - 2026-03-02
 ### Fixed
 - `validator.py` rewritten cleanly — resolved multiple SyntaxError crashes caused by
