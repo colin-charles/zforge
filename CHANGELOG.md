@@ -209,6 +209,14 @@ Requirement already satisfied: annotated-doc>=0.0.2 in /opt/venv/lib/python3.13/
 
 # Changelog
 
+## [2.1.15] - 2026-03-02
+
+### Fixed
+- **builder.py**: APOL cert step now uses embedded Supabase credentials as fallback — no longer skipped when env vars are absent (zero-config)
+- **tester.py**: Corrected  path ( not ) so test_runner.py is found correctly after pip install
+- **cli/scripts/test_runner.py**: Added missing test harness script — validates SKILL.md word count, skill.json required fields, and scripts directory structure
+
+
 ## v2.1.13 — 2026-03-02
 ### Fixed
 - **Critical:** Added missing `02_run_experiment.py` script to pip package — `zforge build` and `zforge dev` now work after `pip install zforge`

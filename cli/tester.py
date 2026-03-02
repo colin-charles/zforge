@@ -3,7 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-SCRIPTS_DIR = Path(__file__).parent.parent / "scripts"
+SCRIPTS_DIR = Path(__file__).parent / "scripts"
 
 
 def run_test(skill_dir=None):

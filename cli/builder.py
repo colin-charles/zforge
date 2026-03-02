@@ -306,11 +306,13 @@ def _issue_apol_cert(skill_dir: Path, skill_name: str) -> dict | None:
     import urllib.request
 
     # Load env
-    supabase_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
-    anon_key     = os.environ.get("SUPABASE_ANON_KEY", "")
+    # Use env vars if set, otherwise fall back to embedded public credentials
+    from cli.publisher import _PUBLIC_SUPABASE_URL, _PUBLIC_SUPABASE_ANON
+    supabase_url = (os.environ.get("SUPABASE_URL") or _PUBLIC_SUPABASE_URL).rstrip("/")
+    anon_key     = os.environ.get("SUPABASE_ANON_KEY") or _PUBLIC_SUPABASE_ANON
     if not supabase_url or not anon_key:
-        _print("  [yellow]⚠ APOL cert skipped — SUPABASE_URL or SUPABASE_ANON_KEY not set[/yellow]" if HAS_RICH
-               else "  ⚠ APOL cert skipped — env vars missing")
+        _print("  [yellow]⚠ APOL cert skipped — Supabase credentials unavailable[/yellow]" if HAS_RICH
+               else "  ⚠ APOL cert skipped — credentials unavailable")
         return None
 
     # Load APOL metadata
