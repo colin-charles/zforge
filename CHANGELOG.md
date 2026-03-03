@@ -400,3 +400,10 @@ Requirement already satisfied: annotated-doc>=0.0.2 in /opt/venv/lib/python3.13/
 - Storage upload now uses embedded service key directly — bypasses broken edge function
 - ZIP uploads to Supabase Storage now work reliably for all creators (no env vars needed)
 - `zforge install` no longer shows 'No download URL available' for newly published skills
+
+
+## v2.1.30 — Fix first-run upgrade detection
+- **Bug fix**: Swapped version check order — PyPI JSON API with `Cache-Control: no-cache` headers is now PRIMARY
+- **Before**: `pip index versions` (CDN-cached, could serve stale data) was primary
+- **After**: Direct PyPI JSON API with cache-busting timestamp + no-cache headers is primary; pip index is fallback
+- **Result**: Fresh installs and first-run checks now reliably detect new versions immediately after publish
