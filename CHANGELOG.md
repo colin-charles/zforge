@@ -1,3 +1,25 @@
+## [2.1.25] - 2026-03-03
+
+### Added
+- **AI Script Repair Loop** (`_script_repair_loop`): When Step 7 tests fail, builder.py
+  now automatically launches a 2-cycle AI repair loop instead of hard-failing.
+  - Captures exact `stderr` from the failing `scripts/main.py` run
+  - Sends broken script + error + `SKILL.md` context to OpenRouter LLM
+  - Rewrites `scripts/main.py` with the AI-fixed version
+  - Re-runs the full `zforge test` suite after each repair cycle
+  - Backs up `main.py` → `main.py.bak` before any repair attempt
+  - Restores original on total failure; hard-stops build with actionable message
+  - Uses `google/gemini-flash-1.5` (free tier) — zero added cost per build
+
+### Changed
+- Step 7 now shows `✅ All tests passed!` on success for clearer pipeline output
+- Build pipeline hard-stops on unrecoverable test failure (after repair exhaustion)
+  with explicit guidance: `fix scripts/main.py manually, then re-run: zforge build`
+
+### Quality Impact
+- CERTIFIED badge now guarantees: structure ✅ + metadata ✅ + syntax ✅ + runtime ✅ + AI-repaired if needed ✅
+- No broken scripts can reach the marketplace without at least 2 AI repair attempts
+
 ## [2.1.24] - 2026-03-03
 
 ### Added

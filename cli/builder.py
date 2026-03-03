@@ -439,6 +439,181 @@ def _issue_apol_cert(skill_dir: Path, skill_name: str) -> dict | None:
         return None
 
 
+# ── Script Repair Loop ───────────────────────────────────────────────────────
+_REPAIR_MAX_CYCLES   = 2
+_OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions"
+_REPAIR_MODEL        = "google/gemini-flash-1.5"  # free tier
+_PUBLIC_OR_KEY       = "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"
+
+
+def _get_script_error(skill_dir: Path) -> tuple[int, str]:
+    """Run scripts/main.py and capture exit code + stderr."""
+    main_py = skill_dir / "scripts" / "main.py"
+    if not main_py.exists():
+        return 1, "scripts/main.py not found"
+    result = subprocess.run(
+        [sys.executable, str(main_py), "--help"],
+        cwd=str(skill_dir),
+        capture_output=True, text=True, timeout=30
+    )
+    if result.returncode not in (0, 2):  # 0=ok, 2=argparse missing-args (acceptable)
+        # Try with no args
+        result2 = subprocess.run(
+            [sys.executable, str(main_py)],
+            cwd=str(skill_dir),
+            capture_output=True, text=True, timeout=30
+        )
+        if result2.returncode not in (0, 2):
+            error = (result2.stderr or result2.stdout or "unknown error").strip()
+            return result2.returncode, error
+    return 0, ""
+
+
+def _call_openrouter_repair(script_code: str, error_msg: str, skill_md: str) -> str:
+    """Call OpenRouter LLM to repair a broken Python script. Returns fixed code."""
+    try:
+        import requests as _req
+    except ImportError:
+        raise RuntimeError("pip install requests")
+
+    api_key = os.environ.get("OPENROUTER_API_KEY") or _PUBLIC_OR_KEY
+    if not api_key:
+        raise RuntimeError("OPENROUTER_API_KEY not set")
+
+    prompt = (
+        "You are an expert Python developer. Fix the following Python script so it runs "
+        "without errors. Preserve all original functionality and logic.
+
+"
+        "## Error encountered
+"
+        "```
+" + error_msg[:2000] + "
+```
+
+"
+        "## Skill context (SKILL.md)
+"
+        "```markdown
+" + skill_md[:3000] + "
+```
+
+"
+        "## Script to fix (scripts/main.py)
+"
+        "```python
+" + script_code + "
+```
+
+"
+        "Return ONLY the fixed Python code, no explanation, no markdown fences."
+    )
+
+    resp = _req.post(
+        _OPENROUTER_CHAT_URL,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://zero-forge.org",
+            "X-Title": "ZeroForge Script Repair",
+        },
+        json={
+            "model": _REPAIR_MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.2,
+            "max_tokens": 4096,
+        },
+        timeout=90,
+    )
+    if resp.status_code != 200:
+        raise RuntimeError(f"OpenRouter [{resp.status_code}]: {resp.text[:300]}")
+
+    data = resp.json()
+    fixed_code = data["choices"][0]["message"]["content"].strip()
+
+    # Strip markdown fences if LLM wrapped code anyway
+    if fixed_code.startswith("```"):
+        lines = fixed_code.splitlines()
+        # Remove first and last fence lines
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        fixed_code = "
+".join(lines).strip()
+
+    return fixed_code
+
+
+def _script_repair_loop(skill_dir: Path) -> bool:
+    """
+    AI-powered script repair loop.
+    Attempts to fix scripts/main.py up to _REPAIR_MAX_CYCLES times.
+    Returns True if script passes smoke test after repair, False if all cycles fail.
+    """
+    main_py = skill_dir / "scripts" / "main.py"
+    skill_md_path = skill_dir / "SKILL.md"
+
+    if not main_py.exists():
+        _print("  [red]✗ scripts/main.py not found — cannot repair[/red]" if HAS_RICH
+               else "  ✗ scripts/main.py not found — cannot repair")
+        return False
+
+    # Backup original
+    backup = skill_dir / "scripts" / "main.py.bak"
+    import shutil as _shutil
+    _shutil.copy2(main_py, backup)
+
+    skill_md = skill_md_path.read_text() if skill_md_path.exists() else ""
+
+    if HAS_RICH:
+        from rich.rule import Rule
+        console.print(Rule("[bold yellow]Script Repair Loop[/bold yellow]"))
+    else:
+        print("
+" + "─" * 40 + " Script Repair Loop " + "─" * 40)
+
+    for cycle in range(1, _REPAIR_MAX_CYCLES + 1):
+        _print(f"  [cyan]Cycle {cycle}/{_REPAIR_MAX_CYCLES} — reading error...[/cyan]" if HAS_RICH
+               else f"  Cycle {cycle}/{_REPAIR_MAX_CYCLES} — reading error...")
+
+        rc, error_msg = _get_script_error(skill_dir)
+        if rc == 0:
+            _print(f"  [green]✅ Script passes smoke test — repair succeeded (cycle {cycle-1})[/green]" if HAS_RICH
+                   else f"  ✅ Script passes smoke test — repair succeeded (cycle {cycle-1})")
+            return True
+
+        _print(f"  [yellow]Error: {error_msg[:200]}[/yellow]" if HAS_RICH
+               else f"  Error: {error_msg[:200]}")
+        _print(f"  [cyan]Cycle {cycle}/{_REPAIR_MAX_CYCLES} — sending to LLM for repair...[/cyan]" if HAS_RICH
+               else f"  Cycle {cycle}/{_REPAIR_MAX_CYCLES} — sending to LLM for repair...")
+
+        try:
+            script_code = main_py.read_text()
+            fixed_code  = _call_openrouter_repair(script_code, error_msg, skill_md)
+            main_py.write_text(fixed_code)
+            _print(f"  [cyan]Cycle {cycle}/{_REPAIR_MAX_CYCLES} — main.py rewritten, re-running smoke test...[/cyan]" if HAS_RICH
+                   else f"  Cycle {cycle}/{_REPAIR_MAX_CYCLES} — main.py rewritten, re-running smoke test...")
+        except Exception as e:
+            _print(f"  [red]Repair cycle {cycle} error: {e}[/red]" if HAS_RICH
+                   else f"  Repair cycle {cycle} error: {e}")
+            continue
+
+    # Final check after last cycle
+    rc, _ = _get_script_error(skill_dir)
+    if rc == 0:
+        _print(f"  [green]✅ Script repair succeeded in {_REPAIR_MAX_CYCLES} cycles[/green]" if HAS_RICH
+               else f"  ✅ Script repair succeeded in {_REPAIR_MAX_CYCLES} cycles")
+        return True
+
+    # All cycles failed — restore backup
+    _shutil.copy2(backup, main_py)
+    _print("  [red]✗ Script repair failed after all cycles — original main.py restored[/red]" if HAS_RICH
+           else "  ✗ Script repair failed after all cycles — original main.py restored")
+    return False
+
+
+
 def build(
     skill_name: str,
     description: str,
@@ -554,7 +729,33 @@ def build(
     _rule("Step 7/7 — Test")
     rc = run_step("zforge test", ["zforge", "test", "--skill", "."], skill_dir)
     if rc != 0:
-        _print("  [yellow]⚠ Some tests failed — review above.[/yellow]" if HAS_RICH else "  ⚠ Some tests failed.")
+        _print("\n  [bold yellow]⚠ Tests failed — launching AI Script Repair Loop...[/bold yellow]" if HAS_RICH
+               else "\n  ⚠ Tests failed — launching AI Script Repair Loop...")
+        repaired = _script_repair_loop(skill_dir)
+        if repaired:
+            # Re-run full test suite to confirm repair
+            _print("  [cyan]Re-running full test suite to confirm repair...[/cyan]" if HAS_RICH
+                   else "  Re-running full test suite to confirm repair...")
+            rc = run_step("zforge test", ["zforge", "test", "--skill", "."], skill_dir)
+            if rc != 0:
+                if HAS_RICH:
+                    console.print("\n  [bold red]✗ Tests still failing after repair — build stopped.[/bold red]")
+                    console.print("  [dim]Check scripts/main.py and fix manually, then re-run: zforge build[/dim]")
+                else:
+                    print("\n  ✗ Tests still failing after repair — build stopped.")
+                return
+            _print("  [bold green]✅ Script repair confirmed — all tests pass![/bold green]" if HAS_RICH
+                   else "  ✅ Script repair confirmed — all tests pass!")
+        else:
+            if HAS_RICH:
+                console.print("\n  [bold red]✗ Script Repair Loop exhausted — build stopped.[/bold red]")
+                console.print("  [dim]Review scripts/main.py manually, fix the error, then re-run: zforge build[/dim]")
+            else:
+                print("\n  ✗ Script Repair Loop exhausted — build stopped.")
+                print("  Review scripts/main.py manually, fix the error, then re-run: zforge build")
+            return
+    else:
+        _print("  [bold green]✅ All tests passed![/bold green]" if HAS_RICH else "  ✅ All tests passed!")
 
     # ── PUBLISH (optional) ────────────────────────────────────────
     if publish or dry_run:
