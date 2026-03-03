@@ -324,3 +324,9 @@ Requirement already satisfied: annotated-doc>=0.0.2 in /opt/venv/lib/python3.13/
 - **Invalid default tags**: `main.py` defaulted tags to `"utilities"`. Changed to `"automation"`.
 - **Category normalizer**: Added normalizer map in `builder.py` that maps common invalid values (`utilities`, `utility`, `tools`, `scripts`, `guides`, etc.) to the nearest valid category instead of failing validation.
 - **Help text**: `--category` option now lists all valid values in its help text.
+
+## [2.1.21] - 2026-03-03
+### Fixed
+- Storage upload now uses embedded service key directly — bypasses broken edge function
+- ZIP uploads to Supabase Storage now work reliably for all creators (no env vars needed)
+- `zforge install` no longer shows 'No download URL available' for newly published skills

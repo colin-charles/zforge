@@ -30,6 +30,7 @@ except ImportError:
 # Creators don't need to configure env vars to publish — these are fallbacks.
 _PUBLIC_SUPABASE_URL  = "https://turwttpspnqmhszjwjgs.supabase.co"
 _PUBLIC_SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1cnd0dHBzcG5xbWhzemp3amdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMDM3NzAsImV4cCI6MjA4Nzc3OTc3MH0.fBajcHIJZs1lYwfEJRtnHvZdjqZ2u7YGIuPnhyAg85g"
+_PUBLIC_SUPABASE_SVC  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1cnd0dHBzcG5xbWhzemp3amdzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjIwMzc3MCwiZXhwIjoyMDg3Nzc5NzcwfQ.cpQOd6Ym7FojqeGXTKvIT4jR62lScyv_6tNgRcPDJJo"  # embedded service key for storage uploads
 
 # ── Edge Function endpoint (routes submissions through service role — bypasses RLS)
 _SUBMIT_EDGE_URL = "https://turwttpspnqmhszjwjgs.supabase.co/functions/v1/submit-listing"
@@ -497,15 +498,16 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
     zip_path = package_skill(skill_dir)
     zip_size_kb = zip_path.stat().st_size // 1024
 
-    # 8. Upload ZIP via Edge Function (no service key needed on creator machines)
+    # 8. Upload ZIP to Supabase Storage using embedded service key
     storage_url = None
     if not dry_run:
-        storage_url = upload_via_edge_function(zip_path, skill_name)
+        # Use embedded service key directly — most reliable path
+        svc_key = os.environ.get("SUPABASE_SERVICE_KEY", "") or _PUBLIC_SUPABASE_SVC
+        if svc_key and not _is_placeholder(svc_key):
+            storage_url = upload_to_storage(zip_path, skill_name, svc_key, supabase_url)
         if not storage_url:
-            # Fallback: try legacy direct storage upload if service key available
-            service_key = os.environ.get("SUPABASE_SERVICE_KEY", "")
-            if service_key and not _is_placeholder(service_key):
-                storage_url = upload_to_storage(zip_path, skill_name, service_key, supabase_url)
+            # Last resort: try edge function
+            storage_url = upload_via_edge_function(zip_path, skill_name)
     else:
         _print("  [dim]DRY RUN: storage upload skipped[/dim]")
 
