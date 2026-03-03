@@ -473,7 +473,9 @@ def _get_script_error(skill_dir: Path) -> tuple[int, str]:
 
 
 def _call_openrouter_repair(script_code: str, error_msg: str, skill_md: str) -> str:
-    """Send broken script to OpenRouter LLM and return the fixed code."""
+    """Send broken script to OpenRouter LLM and return the fixed code.
+    Tries each model in _REPAIR_MODELS in order until one succeeds.
+    """
     try:
         import requests as _req
     except ImportError:
@@ -485,49 +487,75 @@ def _call_openrouter_repair(script_code: str, error_msg: str, skill_md: str) -> 
 
     prompt = (
         "You are an expert Python developer. Fix the following Python script so it runs "
-        "without errors. Preserve all original functionality and logic.\n\n"
-        "## Error encountered\n"
-        "```\n" + error_msg[:2000] + "\n```\n\n"
-        "## Skill context (SKILL.md)\n"
-        "```markdown\n" + skill_md[:3000] + "\n```\n\n"
-        "## Script to fix (scripts/main.py)\n"
-        "```python\n" + script_code + "\n```\n\n"
+        "without errors. Preserve all original functionality and logic.
+
+"
+        "## Error encountered
+"
+        "```
+" + error_msg[:2000] + "
+```
+
+"
+        "## Skill context (SKILL.md)
+"
+        "```markdown
+" + skill_md[:3000] + "
+```
+
+"
+        "## Script to fix (scripts/main.py)
+"
+        "```python
+" + script_code + "
+```
+
+"
         "Return ONLY the fixed Python code, no explanation, no markdown fences."
     )
 
-    resp = _req.post(
-        _OPENROUTER_CHAT_URL,
-        headers={
-            "Authorization": "Bearer " + api_key,
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://zero-forge.org",
-            "X-Title": "ZeroForge Script Repair",
-        },
-        json={
-            "model": _REPAIR_MODEL,
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.2,
-            "max_tokens": 4096,
-        },
-        timeout=90,
-    )
-    if resp.status_code != 200:
-        raise RuntimeError("OpenRouter [" + str(resp.status_code) + "]: " + resp.text[:300])
+    last_error = "No models available"
+    for model in _REPAIR_MODELS:
+        try:
+            resp = _req.post(
+                _OPENROUTER_CHAT_URL,
+                headers={
+                    "Authorization": "Bearer " + api_key,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://zero-forge.org",
+                    "X-Title": "ZeroForge Script Repair",
+                },
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.2,
+                    "max_tokens": 4096,
+                },
+                timeout=90,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                fixed_code = data["choices"][0]["message"]["content"].strip()
+                # Strip markdown fences if LLM wrapped the response
+                if fixed_code.startswith("```"):
+                    fenced_lines = fixed_code.split("
+")
+                    if fenced_lines[0].startswith("```"):
+                        fenced_lines = fenced_lines[1:]
+                    if fenced_lines and fenced_lines[-1].strip() == "```":
+                        fenced_lines = fenced_lines[:-1]
+                    fixed_code = "
+".join(fenced_lines)
+                _print("  Model used for repair: " + model)
+                return fixed_code
+            else:
+                last_error = "OpenRouter [" + str(resp.status_code) + "] model=" + model + ": " + resp.text[:200]
+                _print("  Model " + model + " failed (" + str(resp.status_code) + "), trying next...")
+        except Exception as exc:
+            last_error = str(exc)
+            _print("  Model " + model + " error: " + str(exc) + ", trying next...")
 
-    data = resp.json()
-    fixed_code = data["choices"][0]["message"]["content"].strip()
-
-    # Strip markdown fences if LLM wrapped the response
-    if fixed_code.startswith("```"):
-        fenced_lines = fixed_code.split("\n")
-        if fenced_lines[0].startswith("```"):
-            fenced_lines = fenced_lines[1:]
-        if fenced_lines and fenced_lines[-1].strip() == "```":
-            fenced_lines = fenced_lines[:-1]
-        fixed_code = "\n".join(fenced_lines)
-
-    return fixed_code
-
+    raise RuntimeError("All repair models failed. Last error: " + last_error)
 
 def _script_repair_loop(skill_dir: Path) -> bool:
     """
