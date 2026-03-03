@@ -22,6 +22,17 @@ Requirement already satisfied: shellingham>=1.3.0 in /opt/venv/lib/python3.13/si
 Requirement already satisfied: annotated-doc>=0.0.2 in /opt/venv/lib/python3.13/site-packages (from typer>=0.9.0->zforge[build]) (0.0.4)
 
 ## v2.1.8 — 2026-03-02
+## [2.1.20] - 2026-03-03
+
+### Fixed
+- **`zforge install` now always gets a real download URL** — root cause was ZIP upload requiring `SUPABASE_SERVICE_KEY` which creators don't have
+- ZIP upload now routes through new `upload-skill-zip` Edge Function (service role held server-side)
+- Fallback to legacy direct storage upload if `SUPABASE_SERVICE_KEY` env var present
+
+### Added
+- New Supabase Edge Function: `upload-skill-zip` (status: ACTIVE, verify_jwt: false)
+- `upload_via_edge_function()` in `publisher.py` — multipart ZIP POST, no credentials needed
+- `skills` bucket confirmed public — all ZIPs are publicly downloadable via stable URL
 
 ## [2.1.12] - 2026-03-02
 ### Improved

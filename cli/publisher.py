@@ -250,6 +250,55 @@ def upload_to_storage(zip_path: Path, skill_name: str, service_key: str, supabas
         return None
 
 
+
+
+# ---------------------------------------------------------------------------
+# ZIP upload via Edge Function (no service key needed on creator machines)
+# ---------------------------------------------------------------------------
+
+_UPLOAD_EDGE_URL = "https://turwttpspnqmhszjwjgs.supabase.co/functions/v1/upload-skill-zip"
+
+
+def upload_via_edge_function(zip_path, skill_name):
+    """
+    Upload zip to Supabase Storage via Edge Function.
+    No SUPABASE_SERVICE_KEY required — edge function holds service role.
+    Returns public download URL or None on failure.
+    """
+    if not HAS_REQUESTS:
+        _print("  [yellow]requests not installed — skipping zip upload[/yellow]")
+        return None
+
+    edge_url = os.environ.get("ZFORGE_UPLOAD_URL") or _UPLOAD_EDGE_URL
+    if not edge_url:
+        _print("  [yellow]Upload edge URL not configured — skipping zip upload[/yellow]")
+        return None
+
+    _print(f"  Uploading {zip_path.name} to ZeroForge Storage...")
+    try:
+        with open(zip_path, "rb") as f:
+            resp = requests.post(
+                edge_url,
+                headers={"x-zforge-token": _CLI_TOKEN},
+                files={"file": (zip_path.name, f, "application/zip")},
+                data={"skill_name": skill_name},
+                timeout=120,
+            )
+        if resp.status_code == 200:
+            url = resp.json().get("url", "")
+            _print(f"  [green]Uploaded -> {url}[/green]")
+            return url
+        else:
+            try:
+                err = resp.json().get("error", resp.text[:200])
+            except Exception:
+                err = resp.text[:200]
+            _print(f"  [yellow]Upload failed [{resp.status_code}]: {err}[/yellow]")
+            return None
+    except Exception as e:
+        _print(f"  [yellow]Upload error: {e}[/yellow]")
+        return None
+
 # ---------------------------------------------------------------------------
 # APOL cert loader
 # ---------------------------------------------------------------------------
@@ -448,11 +497,15 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
     zip_path = package_skill(skill_dir)
     zip_size_kb = zip_path.stat().st_size // 1024
 
-    # 8. Upload to Supabase Storage (always attempt, even in dry_run preview)
+    # 8. Upload ZIP via Edge Function (no service key needed on creator machines)
     storage_url = None
     if not dry_run:
-        service_key = os.environ.get("SUPABASE_SERVICE_KEY", "")  # optional: enables ZIP storage upload
-        storage_url = upload_to_storage(zip_path, skill_name, service_key, supabase_url)
+        storage_url = upload_via_edge_function(zip_path, skill_name)
+        if not storage_url:
+            # Fallback: try legacy direct storage upload if service key available
+            service_key = os.environ.get("SUPABASE_SERVICE_KEY", "")
+            if service_key and not _is_placeholder(service_key):
+                storage_url = upload_to_storage(zip_path, skill_name, service_key, supabase_url)
     else:
         _print("  [dim]DRY RUN: storage upload skipped[/dim]")
 
