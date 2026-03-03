@@ -35,31 +35,57 @@ except Exception:
 
 def _check_for_update() -> bool:
     """Check PyPI for a newer version — synchronous. Returns True if upgraded."""
-    import subprocess, time, pathlib, os
+    import subprocess, time, pathlib, os, re as _re
     # Skip upgrade check in subprocesses spawned by zforge build
     if os.environ.get('ZFORGE_SUBPROCESS'):
         return False
     try:
-        # --- 5-min cooldown via cache file ---
+        # --- 60s cooldown via cache file ---
         _cache = pathlib.Path.home() / ".zforge_update_check"
         now = time.time()
         if _cache.exists() and (now - _cache.stat().st_mtime) < 60:
             return False  # checked recently, skip
-        _cache.touch()  # update timestamp before network call
+        # NOTE: touch cache AFTER version check to avoid locking out on stale responses
 
         def _ver(v): return tuple(int(x) for x in v.split("."))
 
-        req = urllib.request.Request(
-            "https://pypi.org/pypi/zforge/json",
-            headers={"User-Agent": f"zforge/{VERSION}"}
-        )
-        with urllib.request.urlopen(req, timeout=3) as resp:
-            latest = _json.loads(resp.read())["info"]["version"]
+        latest = None
+
+        # Primary: use pip to query versions — bypasses PyPI CDN caching issues
+        try:
+            pip_result = subprocess.run(
+                [sys.executable, "-m", "pip", "index", "versions", "zforge",
+                 "--disable-pip-version-check", "--no-cache-dir"],
+                capture_output=True, text=True, timeout=10
+            )
+            if pip_result.returncode == 0 and pip_result.stdout:
+                m = _re.search(r"zforge\s+\(([\d.]+)\)", pip_result.stdout)
+                if m:
+                    latest = m.group(1)
+        except Exception:
+            pass
+
+        # Fallback: PyPI JSON API with cache-busting timestamp
+        if not latest:
+            ts = int(now)
+            req = urllib.request.Request(
+                "https://pypi.org/pypi/zforge/json?_=" + str(ts),
+                headers={
+                    "User-Agent": "zforge/" + VERSION,
+                    "Cache-Control": "no-cache, no-store",
+                    "Pragma": "no-cache",
+                }
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                latest = _json.loads(resp.read())["info"]["version"]
+
+        # Touch cache AFTER a successful check (whether update found or not)
+        _cache.touch()
 
         if _ver(latest) <= _ver(VERSION):
             return False  # already on latest
 
-        print(f"⚡ zforge v{VERSION} → v{latest} found. Auto-upgrading...")
+        print("⚡ zforge v" + VERSION + " → v" + latest + " found. Auto-upgrading...")
         result = subprocess.run(
             [sys.executable, "-m", "pip", "install", "--upgrade", "zforge",
              "--quiet", "--disable-pip-version-check"],
@@ -69,10 +95,10 @@ def _check_for_update() -> bool:
             # pip succeeded — restart immediately with new code.
             # Do NOT gate on importlib.metadata (it caches stale version in the
             # same process and causes os.execv to be skipped on some envs).
-            print(f"✅ Upgraded to zforge v{latest} — restarting...\n")
+            print("✅ Upgraded to zforge v" + latest + " — restarting...\n")
             return True
         else:
-            print(f"⚠️  Auto-upgrade failed. Run: pip install --upgrade zforge\n")
+            print("⚠️  Auto-upgrade failed. Run: pip install --upgrade zforge\n")
             return False
     except Exception:
         return False  # Never crash the CLI over an update check
