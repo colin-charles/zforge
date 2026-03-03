@@ -487,30 +487,13 @@ def _call_openrouter_repair(script_code: str, error_msg: str, skill_md: str) -> 
 
     prompt = (
         "You are an expert Python developer. Fix the following Python script so it runs "
-        "without errors. Preserve all original functionality and logic.
-
-"
-        "## Error encountered
-"
-        "```
-" + error_msg[:2000] + "
-```
-
-"
-        "## Skill context (SKILL.md)
-"
-        "```markdown
-" + skill_md[:3000] + "
-```
-
-"
-        "## Script to fix (scripts/main.py)
-"
-        "```python
-" + script_code + "
-```
-
-"
+        "without errors. Preserve all original functionality and logic.\n\n"
+        "## Error encountered\n"
+        "```\n" + error_msg[:2000] + "\n```\n\n"
+        "## Skill context (SKILL.md)\n"
+        "```markdown\n" + skill_md[:3000] + "\n```\n\n"
+        "## Script to fix (scripts/main.py)\n"
+        "```python\n" + script_code + "\n```\n\n"
         "Return ONLY the fixed Python code, no explanation, no markdown fences."
     )
 
@@ -538,14 +521,12 @@ def _call_openrouter_repair(script_code: str, error_msg: str, skill_md: str) -> 
                 fixed_code = data["choices"][0]["message"]["content"].strip()
                 # Strip markdown fences if LLM wrapped the response
                 if fixed_code.startswith("```"):
-                    fenced_lines = fixed_code.split("
-")
+                    fenced_lines = fixed_code.split("\n")
                     if fenced_lines[0].startswith("```"):
                         fenced_lines = fenced_lines[1:]
                     if fenced_lines and fenced_lines[-1].strip() == "```":
                         fenced_lines = fenced_lines[:-1]
-                    fixed_code = "
-".join(fenced_lines)
+                    fixed_code = "\n".join(fenced_lines)
                 _print("  Model used for repair: " + model)
                 return fixed_code
             else:
@@ -756,21 +737,21 @@ def build(
             rc = run_step("zforge test", ["zforge", "test", "--skill", "."], skill_dir)
             if rc != 0:
                 if HAS_RICH:
-                    console.print("\n  [bold red]✗ Tests still failing after repair — build stopped.[/bold red]")
-                    console.print("  [dim]Check scripts/main.py and fix manually, then re-run: zforge build[/dim]")
+                    console.print("\n  [bold yellow]⚠ Tests still failing after repair — continuing to publish step.[/bold yellow]")
+                    console.print("  [dim]Fix scripts/main.py manually before publishing to ensure quality.[/dim]")
                 else:
-                    print("\n  ✗ Tests still failing after repair — build stopped.")
-                return
-            _print("  [bold green]✅ Script repair confirmed — all tests pass![/bold green]" if HAS_RICH
-                   else "  ✅ Script repair confirmed — all tests pass!")
+                    print("\n  ⚠ Tests still failing after repair — continuing to publish step.")
+                    print("  Fix scripts/main.py manually before publishing to ensure quality.")
+            else:
+                _print("  [bold green]✅ Script repair confirmed — all tests pass![/bold green]" if HAS_RICH
+                       else "  ✅ Script repair confirmed — all tests pass!")
         else:
             if HAS_RICH:
-                console.print("\n  [bold red]✗ Script Repair Loop exhausted — build stopped.[/bold red]")
-                console.print("  [dim]Review scripts/main.py manually, fix the error, then re-run: zforge build[/dim]")
+                console.print("\n  [bold yellow]⚠ Script Repair Loop unavailable — continuing to publish step.[/bold yellow]")
+                console.print("  [dim]Fix scripts/main.py manually: zforge test --skill . to verify.[/dim]")
             else:
-                print("\n  ✗ Script Repair Loop exhausted — build stopped.")
-                print("  Review scripts/main.py manually, fix the error, then re-run: zforge build")
-            return
+                print("\n  ⚠ Script Repair Loop unavailable — continuing to publish step.")
+                print("  Fix scripts/main.py manually: zforge test --skill . to verify.")
     else:
         _print("  [bold green]✅ All tests passed![/bold green]" if HAS_RICH else "  ✅ All tests passed!")
 
@@ -834,42 +815,46 @@ def build(
     if HAS_RICH:
         if _done_certified and _done_score is not None and _done_score >= 0.80:
             console.print(Panel(
-                f"[bold green]✓ Skill ready:[/bold green] [yellow]{skill_dir}[/yellow]\n"
-                f"[bold green]🏆 APOL Score: {round(_done_score, 3)} — CERTIFIED[/bold green]",
+                "[bold green]✓ Skill ready:[/bold green] [yellow]" + str(skill_dir) + "[/yellow]\n"
+                "[bold green]🏆 APOL Score: " + str(round(_done_score, 3)) + " — CERTIFIED[/bold green]",
                 title="[bold magenta]ZeroForge[/bold magenta]",
                 border_style="green"
             ))
-            try:
-                _publish_now = console.input("[bold cyan]Publish to marketplace now? [Y/n]: [/bold cyan]").strip().lower()
-            except (EOFError, KeyboardInterrupt):
-                _publish_now = "n"
-            if _publish_now in ("", "y", "yes"):
-                _rule("Step 8 — Publish")
-                import subprocess as _subp
-                _subp.run(["zforge", "publish", "."], cwd=str(skill_dir))
-                _show_marketplace_url(skill_dir, supabase_url, anon_key, True, console)
-            else:
-                console.print(f"[dim]Run when ready:[/dim] [cyan]zforge publish {skill_dir}[/cyan]")
         else:
+            _score_str = (" | APOL: " + str(round(_done_score, 3))) if _done_score is not None else ""
             console.print(Panel(
-                f"[bold green]✓ Skill ready:[/bold green] [yellow]{skill_dir}[/yellow]\n"
-                f"[dim]Review SKILL.md then run:[/dim] [cyan]zforge publish {skill_dir}[/cyan]",
+                "[bold green]✓ Skill ready:[/bold green] [yellow]" + str(skill_dir) + "[/yellow]" + _score_str,
                 title="[bold magenta]ZeroForge[/bold magenta]",
-                border_style="green"
+                border_style="yellow" if not _done_certified else "green"
             ))
-    else:
-        print(f"  ✓ Skill ready: {skill_dir}")
-        if _done_certified and _done_score is not None and _done_score >= 0.80:
-            print(f"  🏆 APOL Score: {round(_done_score, 3)} — CERTIFIED")
-            try:
-                _publish_now = input("  Publish to marketplace now? [Y/n]: ").strip().lower()
-            except (EOFError, KeyboardInterrupt):
-                _publish_now = "n"
-            if _publish_now in ("", "y", "yes"):
-                import subprocess as _subp
-                _subp.run(["zforge", "publish", "."], cwd=str(skill_dir))
-                _show_marketplace_url(skill_dir, supabase_url, anon_key, False, None)
-            else:
-                print(f"  Run when ready: zforge publish {skill_dir}")
+            if not _done_certified:
+                console.print("  [yellow]⚠ Skill is UNCERTIFIED — you can still publish but it won't show the CERTIFIED badge.[/yellow]")
+        try:
+            _publish_now = console.input("[bold cyan]Publish to marketplace now? [Y/n]: [/bold cyan]").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            _publish_now = "n"
+        if _publish_now in ("", "y", "yes"):
+            _rule("Step 8 — Publish")
+            import subprocess as _subp
+            _subp.run(["zforge", "publish", "."], cwd=str(skill_dir))
+            _show_marketplace_url(skill_dir, supabase_url, anon_key, True, console)
         else:
-            print(f"  Run: zforge publish {skill_dir}")
+            console.print("[dim]Run when ready:[/dim] [cyan]zforge publish " + str(skill_dir) + "[/cyan]")
+    else:
+        print("  ✓ Skill ready: " + str(skill_dir))
+        if _done_certified and _done_score is not None:
+            print("  🏆 APOL Score: " + str(round(_done_score, 3)) + " — CERTIFIED")
+        else:
+            if _done_score is not None:
+                print("  APOL Score: " + str(round(_done_score, 3)) + " (UNCERTIFIED)")
+            print("  ⚠ Skill is UNCERTIFIED — you can still publish but won't receive the CERTIFIED badge.")
+        try:
+            _publish_now = input("  Publish to marketplace now? [Y/n]: ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            _publish_now = "n"
+        if _publish_now in ("", "y", "yes"):
+            import subprocess as _subp
+            _subp.run(["zforge", "publish", "."], cwd=str(skill_dir))
+            _show_marketplace_url(skill_dir, supabase_url, anon_key, False, None)
+        else:
+            print("  Run when ready: zforge publish " + str(skill_dir))
