@@ -1,3 +1,10 @@
+## [2.1.33] - 2026-03-03
+### Changed
+- `litellm` promoted from optional `[build]` extra to **core dependency** — always installed with `pip install zforge`
+- Updated `builder.py` error message: now correctly says `pip install --upgrade zforge` instead of `pip install zforge[build]`
+- Cleaned up `[project.optional-dependencies]` in `pyproject.toml`
+
+
 ## [2.1.32] - 2026-03-03
 ### Fixed
 - Added `requests>=2.28.0` as declared core dependency (was used throughout codebase but missing from pyproject.toml — could cause RuntimeError on fresh installs)
