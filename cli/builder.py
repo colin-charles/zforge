@@ -597,13 +597,59 @@ def build(
 
     # ── DONE ──────────────────────────────────────────────────────
     _rule("Build Complete")
+
+    # Read cached APOL score from skill.json to decide whether to offer auto-publish
+    _done_score = None
+    _done_certified = False
+    try:
+        import json as _donejson
+        _sj_path = skill_dir / "skill.json"
+        if _sj_path.exists():
+            _sj = _donejson.loads(_sj_path.read_text())
+            _done_score = _sj.get("quality", {}).get("apol_composite_score", None)
+            _done_certified = _sj.get("quality", {}).get("apol_certified", False)
+            if _done_score is not None:
+                _done_score = float(_done_score)
+    except Exception:
+        pass
+
     if HAS_RICH:
-        console.print(Panel(
-            f"[bold green]✓ Skill ready:[/bold green] [yellow]{skill_dir}[/yellow]\n"
-            f"[dim]Review SKILL.md then run:[/dim] [cyan]zforge publish {skill_dir}[/cyan]",
-            title="[bold magenta]ZeroForge[/bold magenta]",
-            border_style="green"
-        ))
+        if _done_certified and _done_score is not None and _done_score >= 0.80:
+            console.print(Panel(
+                f"[bold green]✓ Skill ready:[/bold green] [yellow]{skill_dir}[/yellow]\n"
+                f"[bold green]🏆 APOL Score: {round(_done_score, 3)} — CERTIFIED[/bold green]",
+                title="[bold magenta]ZeroForge[/bold magenta]",
+                border_style="green"
+            ))
+            try:
+                _publish_now = console.input("[bold cyan]Publish to marketplace now? [Y/n]: [/bold cyan]").strip().lower()
+            except (EOFError, KeyboardInterrupt):
+                _publish_now = "n"
+            if _publish_now in ("", "y", "yes"):
+                _rule("Step 8 — Publish")
+                import subprocess as _subp
+                _subp.run(["zforge", "publish", "."], cwd=str(skill_dir))
+            else:
+                console.print(f"[dim]Run when ready:[/dim] [cyan]zforge publish {skill_dir}[/cyan]")
+        else:
+            console.print(Panel(
+                f"[bold green]✓ Skill ready:[/bold green] [yellow]{skill_dir}[/yellow]\n"
+                f"[dim]Review SKILL.md then run:[/dim] [cyan]zforge publish {skill_dir}[/cyan]",
+                title="[bold magenta]ZeroForge[/bold magenta]",
+                border_style="green"
+            ))
     else:
         print(f"  ✓ Skill ready: {skill_dir}")
-        print(f"  Run: zforge publish {skill_dir}")
+        if _done_certified and _done_score is not None and _done_score >= 0.80:
+            print(f"  🏆 APOL Score: {round(_done_score, 3)} — CERTIFIED")
+            try:
+                _publish_now = input("  Publish to marketplace now? [Y/n]: ").strip().lower()
+            except (EOFError, KeyboardInterrupt):
+                _publish_now = "n"
+            if _publish_now in ("", "y", "yes"):
+                import subprocess as _subp
+                _subp.run(["zforge", "publish", "."], cwd=str(skill_dir))
+            else:
+                print(f"  Run when ready: zforge publish {skill_dir}")
+        else:
+            print(f"  Run: zforge publish {skill_dir}")

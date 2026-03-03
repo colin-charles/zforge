@@ -1,3 +1,13 @@
+## [2.1.23] - 2026-03-03
+### Added
+- `zforge build` now prompts "Publish to marketplace now? [Y/n]" after a certified build (APOL score ≥ 0.80)
+- Creators can publish in one step without running a separate `zforge publish` command
+- Prompt gracefully handles non-interactive/EOF environments (defaults to no)
+
+### Changed
+- Build Complete panel now shows APOL score and CERTIFIED status prominently
+- Non-certified builds still show the manual `zforge publish` instruction as before
+
 ## [2.1.22] - 2026-03-03
 
 ### Fixed
