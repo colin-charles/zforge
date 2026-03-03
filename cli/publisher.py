@@ -84,7 +84,7 @@ def load_env():
                 if not line or line.startswith('#') or '=' not in line:
                     continue
                 k, v = line.split('=', 1)
-                os.environ.setdefault(k.strip(), v.strip())
+                os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
             return env_path
     return None
 
@@ -356,7 +356,7 @@ def _submit_to_edge_function(payload: dict) -> dict:
     except requests.exceptions.Timeout:
         raise RuntimeError("Request timed out — ZeroForge may be temporarily unavailable")
 
-    if resp.status_code == 201:
+    if resp.status_code in (200, 201):
         return resp.json()
 
     try:
@@ -535,6 +535,7 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
         "source_url": resolved_source or "",          # GitHub source (optional)
         "category": mapped_cat,
         "tags": tags_list,
+        "slug": getattr(meta, 'slug', '') or skill_name.replace('_', '-'),
         "price": "free",
         "status": "approved" if _apol_certified else "pending",
         "apol_certified": _apol_certified,   # set by APOL judge, not self-reported

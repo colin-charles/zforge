@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.36] - 2026-03-03
+### Fixed
+- Fix storage URL quote stripping, HTTP 200 success handling, and missing slug in publish payload
+
+
 ## [2.1.35] - 2026-03-03
 ### Fixed
 - **Critical cert bug**: `_issue_apol_cert()` was looking for `experiments/apol_meta.json` (never written). Now scans for latest `experiments/NNN_*/experiment_meta.json` subdirectory
