@@ -1,3 +1,18 @@
+## [2.1.24] - 2026-03-03
+
+### Added
+- **Real runtime smoke tests** in test_runner.py — skills are now actually executed during Step 7, not just checked for existence
+- **Syntax check** (`py_compile`) for all .py scripts — catches import errors and syntax failures before publish
+- **Runtime smoke test**: runs `scripts/main.py --help` (exit 0 = pass, exit 2 = args required = pass); falls back to no-args run if --help unsupported
+- **SkillTest.md custom test execution**: parses test blocks and runs each `command:` entry, checking expected exit codes and output
+- **\_unquote() helper** in SkillTest.md parser — correctly handles quoted command values without stripping embedded quotes
+- **[SKIP] tag** for non-fatal skipped sections (no main.py, no SkillTest.md tests)
+
+### Changed
+- Step 7 (Tests) now fails the build pipeline if scripts/main.py crashes or has syntax errors — certified skills must actually run
+- test_runner.py output now grouped into sections: Structure / SKILL.md / skill.json / Scripts / Syntax Check / Runtime Smoke Test / SkillTest.md
+
+
 ## [2.1.23] - 2026-03-03
 ### Added
 - `zforge build` now prompts "Publish to marketplace now? [Y/n]" after a certified build (APOL score ≥ 0.80)
