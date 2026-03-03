@@ -446,31 +446,32 @@ _REPAIR_MODEL        = "google/gemini-flash-1.5"  # free tier
 _PUBLIC_OR_KEY       = "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"
 
 
+
 def _get_script_error(skill_dir: Path) -> tuple[int, str]:
     """Run scripts/main.py and capture exit code + stderr."""
+    import subprocess as _sp
+    import sys as _sys
     main_py = skill_dir / "scripts" / "main.py"
     if not main_py.exists():
         return 1, "scripts/main.py not found"
-    result = subprocess.run(
-        [sys.executable, str(main_py), "--help"],
-        cwd=str(skill_dir),
-        capture_output=True, text=True, timeout=30
-    )
-    if result.returncode not in (0, 2):  # 0=ok, 2=argparse missing-args (acceptable)
-        # Try with no args
-        result2 = subprocess.run(
-            [sys.executable, str(main_py)],
+    try:
+        result = _sp.run(
+            [_sys.executable, str(main_py)],
             cwd=str(skill_dir),
-            capture_output=True, text=True, timeout=30
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
-        if result2.returncode not in (0, 2):
-            error = (result2.stderr or result2.stdout or "unknown error").strip()
-            return result2.returncode, error
-    return 0, ""
+        combined = (result.stderr or "") + (result.stdout or "")
+        return result.returncode, combined
+    except _sp.TimeoutExpired:
+        return 1, "Timeout after 30s"
+    except Exception as exc:
+        return 1, str(exc)
 
 
 def _call_openrouter_repair(script_code: str, error_msg: str, skill_md: str) -> str:
-    """Call OpenRouter LLM to repair a broken Python script. Returns fixed code."""
+    """Send broken script to OpenRouter LLM and return the fixed code."""
     try:
         import requests as _req
     except ImportError:
@@ -482,37 +483,20 @@ def _call_openrouter_repair(script_code: str, error_msg: str, skill_md: str) -> 
 
     prompt = (
         "You are an expert Python developer. Fix the following Python script so it runs "
-        "without errors. Preserve all original functionality and logic.
-
-"
-        "## Error encountered
-"
-        "```
-" + error_msg[:2000] + "
-```
-
-"
-        "## Skill context (SKILL.md)
-"
-        "```markdown
-" + skill_md[:3000] + "
-```
-
-"
-        "## Script to fix (scripts/main.py)
-"
-        "```python
-" + script_code + "
-```
-
-"
+        "without errors. Preserve all original functionality and logic.\n\n"
+        "## Error encountered\n"
+        "```\n" + error_msg[:2000] + "\n```\n\n"
+        "## Skill context (SKILL.md)\n"
+        "```markdown\n" + skill_md[:3000] + "\n```\n\n"
+        "## Script to fix (scripts/main.py)\n"
+        "```python\n" + script_code + "\n```\n\n"
         "Return ONLY the fixed Python code, no explanation, no markdown fences."
     )
 
     resp = _req.post(
         _OPENROUTER_CHAT_URL,
         headers={
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": "Bearer " + api_key,
             "Content-Type": "application/json",
             "HTTP-Referer": "https://zero-forge.org",
             "X-Title": "ZeroForge Script Repair",
@@ -526,21 +510,19 @@ def _call_openrouter_repair(script_code: str, error_msg: str, skill_md: str) -> 
         timeout=90,
     )
     if resp.status_code != 200:
-        raise RuntimeError(f"OpenRouter [{resp.status_code}]: {resp.text[:300]}")
+        raise RuntimeError("OpenRouter [" + str(resp.status_code) + "]: " + resp.text[:300])
 
     data = resp.json()
     fixed_code = data["choices"][0]["message"]["content"].strip()
 
-    # Strip markdown fences if LLM wrapped code anyway
+    # Strip markdown fences if LLM wrapped the response
     if fixed_code.startswith("```"):
-        lines = fixed_code.splitlines()
-        # Remove first and last fence lines
-        if lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].strip() == "```":
-            lines = lines[:-1]
-        fixed_code = "
-".join(lines).strip()
+        fenced_lines = fixed_code.split("\n")
+        if fenced_lines[0].startswith("```"):
+            fenced_lines = fenced_lines[1:]
+        if fenced_lines and fenced_lines[-1].strip() == "```":
+            fenced_lines = fenced_lines[:-1]
+        fixed_code = "\n".join(fenced_lines)
 
     return fixed_code
 
@@ -551,65 +533,70 @@ def _script_repair_loop(skill_dir: Path) -> bool:
     Attempts to fix scripts/main.py up to _REPAIR_MAX_CYCLES times.
     Returns True if script passes smoke test after repair, False if all cycles fail.
     """
+    import shutil as _shutil
     main_py = skill_dir / "scripts" / "main.py"
     skill_md_path = skill_dir / "SKILL.md"
 
     if not main_py.exists():
-        _print("  [red]✗ scripts/main.py not found — cannot repair[/red]" if HAS_RICH
-               else "  ✗ scripts/main.py not found — cannot repair")
+        msg = "  \u2717 scripts/main.py not found \u2014 cannot repair"
+        _print(("  [red]" + msg.strip() + "[/red]") if HAS_RICH else msg)
         return False
 
-    # Backup original
-    backup = skill_dir / "scripts" / "main.py.bak"
-    import shutil as _shutil
-    _shutil.copy2(main_py, backup)
-
-    skill_md = skill_md_path.read_text() if skill_md_path.exists() else ""
-
-    if HAS_RICH:
-        from rich.rule import Rule
-        console.print(Rule("[bold yellow]Script Repair Loop[/bold yellow]"))
-    else:
-        print("
-" + "─" * 40 + " Script Repair Loop " + "─" * 40)
+    skill_md = skill_md_path.read_text(encoding="utf-8") if skill_md_path.exists() else ""
+    backup_path = main_py.with_suffix(".py.bak")
 
     for cycle in range(1, _REPAIR_MAX_CYCLES + 1):
-        _print(f"  [cyan]Cycle {cycle}/{_REPAIR_MAX_CYCLES} — reading error...[/cyan]" if HAS_RICH
-               else f"  Cycle {cycle}/{_REPAIR_MAX_CYCLES} — reading error...")
+        _print("  Cycle " + str(cycle) + "/" + str(_REPAIR_MAX_CYCLES) + " \u2014 reading error...")
 
-        rc, error_msg = _get_script_error(skill_dir)
-        if rc == 0:
-            _print(f"  [green]✅ Script passes smoke test — repair succeeded (cycle {cycle-1})[/green]" if HAS_RICH
-                   else f"  ✅ Script passes smoke test — repair succeeded (cycle {cycle-1})")
+        returncode, error_msg = _get_script_error(skill_dir)
+        if returncode == 0:
+            msg = "  \u2713 Script passes \u2014 no repair needed"
+            _print(("  [green]" + msg.strip() + "[/green]") if HAS_RICH else msg)
             return True
 
-        _print(f"  [yellow]Error: {error_msg[:200]}[/yellow]" if HAS_RICH
-               else f"  Error: {error_msg[:200]}")
-        _print(f"  [cyan]Cycle {cycle}/{_REPAIR_MAX_CYCLES} — sending to LLM for repair...[/cyan]" if HAS_RICH
-               else f"  Cycle {cycle}/{_REPAIR_MAX_CYCLES} — sending to LLM for repair...")
+        _print("  Error: " + error_msg[:200])
+        _print("  Cycle " + str(cycle) + "/" + str(_REPAIR_MAX_CYCLES) + " \u2014 sending to LLM for repair...")
 
         try:
-            script_code = main_py.read_text()
-            fixed_code  = _call_openrouter_repair(script_code, error_msg, skill_md)
-            main_py.write_text(fixed_code)
-            _print(f"  [cyan]Cycle {cycle}/{_REPAIR_MAX_CYCLES} — main.py rewritten, re-running smoke test...[/cyan]" if HAS_RICH
-                   else f"  Cycle {cycle}/{_REPAIR_MAX_CYCLES} — main.py rewritten, re-running smoke test...")
-        except Exception as e:
-            _print(f"  [red]Repair cycle {cycle} error: {e}[/red]" if HAS_RICH
-                   else f"  Repair cycle {cycle} error: {e}")
-            continue
+            script_code = main_py.read_text(encoding="utf-8")
+            _shutil.copy2(str(main_py), str(backup_path))
 
-    # Final check after last cycle
-    rc, _ = _get_script_error(skill_dir)
-    if rc == 0:
-        _print(f"  [green]✅ Script repair succeeded in {_REPAIR_MAX_CYCLES} cycles[/green]" if HAS_RICH
-               else f"  ✅ Script repair succeeded in {_REPAIR_MAX_CYCLES} cycles")
-        return True
+            fixed_code = _call_openrouter_repair(script_code, error_msg, skill_md)
 
-    # All cycles failed — restore backup
-    _shutil.copy2(backup, main_py)
-    _print("  [red]✗ Script repair failed after all cycles — original main.py restored[/red]" if HAS_RICH
-           else "  ✗ Script repair failed after all cycles — original main.py restored")
+            if not fixed_code.strip():
+                _print("  Cycle " + str(cycle) + ": LLM returned empty response \u2014 skipping")
+                continue
+
+            _print("  Cycle " + str(cycle) + "/" + str(_REPAIR_MAX_CYCLES) + " \u2014 main.py rewritten, re-running smoke test...")
+            main_py.write_text(fixed_code, encoding="utf-8")
+
+            import py_compile as _pyc
+            try:
+                _pyc.compile(str(main_py), doraise=True)
+            except _pyc.PyCompileError as syntax_err:
+                _print("  Cycle " + str(cycle) + ": repaired script has syntax error: " + str(syntax_err))
+                _shutil.copy2(str(backup_path), str(main_py))
+                continue
+
+            rc, _ = _get_script_error(skill_dir)
+            if rc == 0:
+                msg = "  \u2713 Script repair confirmed \u2014 all tests pass!"
+                _print(("  [green]" + msg.strip() + "[/green]") if HAS_RICH else msg)
+                backup_path.unlink(missing_ok=True)
+                return True
+            else:
+                _print("  Cycle " + str(cycle) + ": still failing after repair, retrying...")
+
+        except Exception as exc:
+            _print("  Cycle " + str(cycle) + ": repair error: " + str(exc))
+            if backup_path.exists():
+                _shutil.copy2(str(backup_path), str(main_py))
+
+    msg = "  \u2717 Script repair failed after all cycles \u2014 manual fix required"
+    _print(("  [red]" + msg.strip() + "[/red]") if HAS_RICH else msg)
+    if backup_path.exists():
+        _shutil.copy2(str(backup_path), str(main_py))
+        backup_path.unlink(missing_ok=True)
     return False
 
 

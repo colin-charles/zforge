@@ -1,5 +1,13 @@
 ## [2.1.25] - 2026-03-03
 
+## [2.1.26] - 2026-03-03
+### Fixed
+- Critical SyntaxError in builder.py repair loop functions (_get_script_error, _call_openrouter_repair, _script_repair_loop) caused by unterminated string literals introduced in v2.1.25
+- Rewrote all three repair functions using safe string concatenation and base64-safe encoding to prevent bash escaping issues during file generation
+- Pipeline Step 7 (Test) and Script Repair Loop now fully functional
+
+
+
 ### Added
 - **AI Script Repair Loop** (`_script_repair_loop`): When Step 7 tests fail, builder.py
   now automatically launches a 2-cycle AI repair loop instead of hard-failing.
