@@ -469,7 +469,7 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
         "category": mapped_cat,
         "tags": tags_list,
         "price": "free",
-        "status": "pending",
+        "status": "approved" if _apol_certified else "pending",
         "apol_certified": _apol_certified,   # set by APOL judge, not self-reported
         "apol_cert": {
             "apol_composite_score": apol_score,
@@ -529,7 +529,7 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
         lines = (
             "[bold green]Listing created![/bold green]\n\n"
             f"  [bold]ID:[/bold]          {listing_id}\n"
-            f"  [bold]Status:[/bold]      [yellow]pending[/yellow]\n"
+            f"  [bold]Status:[/bold]      {"[green]approved — live on marketplace[/green]" if _apol_certified else "[yellow]pending admin review[/yellow]"}\n"
             f"  [bold]Storage URL:[/bold] {storage_url or '(none)'}\n"
             f"  [bold]Source URL:[/bold]  {resolved_source or '(private)'}\n"
             f"  [bold]Listing:[/bold]     https://zero-forge.org/listing/?id={listing_id}\n"

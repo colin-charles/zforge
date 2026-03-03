@@ -209,6 +209,15 @@ Requirement already satisfied: annotated-doc>=0.0.2 in /opt/venv/lib/python3.13/
 
 # Changelog
 
+## [2.1.19] - 2026-03-03
+### Changed
+- CERTIFIED skills (APOL score >= 0.80) bypass admin approval — go live immediately
+- publisher.py: payload status = approved when apol_certified is True
+- submit-listing edge function: server-side auto-approve when apol_certified=true
+- Success message shows approved/pending conditionally
+- Re-publishing a CERTIFIED skill preserves approved status
+
+
 ## [2.1.16] - 2026-03-03
 
 ### Fixed
