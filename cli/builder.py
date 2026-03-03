@@ -291,7 +291,9 @@ def build_skill_json(skill_dir: Path, name: str, author: str, tags: list,
 def run_step(label: str, cmd: list, cwd: Path) -> int:
     """Run a subprocess step and stream output."""
     _print(f"\n  [bold cyan]→ {label}[/bold cyan]" if HAS_RICH else f"\n  → {label}")
-    result = subprocess.run(cmd, cwd=cwd)
+    import os as _os
+    _env = {**_os.environ, "ZFORGE_SUBPROCESS": "1"}
+    result = subprocess.run(cmd, cwd=cwd, env=_env)
     return result.returncode
 
 

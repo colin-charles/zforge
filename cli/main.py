@@ -36,6 +36,9 @@ except Exception:
 def _check_for_update() -> bool:
     """Check PyPI for a newer version — synchronous. Returns True if upgraded."""
     import subprocess, time, pathlib, os
+    # Skip upgrade check in subprocesses spawned by zforge build
+    if os.environ.get('ZFORGE_SUBPROCESS'):
+        return False
     try:
         # --- 5-min cooldown via cache file ---
         _cache = pathlib.Path.home() / ".zforge_update_check"

@@ -1,5 +1,12 @@
 ## [2.1.25] - 2026-03-03
 
+## [2.1.27] - 2026-03-03
+### Fixed
+- **Double-upgrade bug**: `zforge build` spawns subprocesses (`zforge dev`, `zforge validate`, `zforge test`, `zforge publish`) that each triggered the auto-upgrade check independently, causing redundant upgrades mid-pipeline. Fixed by:
+  - `main.py`: Skip `_check_for_update()` immediately when `ZFORGE_SUBPROCESS=1` env var is set
+  - `builder.py`: `run_step()` now passes `ZFORGE_SUBPROCESS=1` to all subprocess environments
+- Upgrade now fires exactly once — at the top-level `zforge build` invocation only
+
 ## [2.1.26] - 2026-03-03
 ### Fixed
 - Critical SyntaxError in builder.py repair loop functions (_get_script_error, _call_openrouter_repair, _script_repair_loop) caused by unterminated string literals introduced in v2.1.25
