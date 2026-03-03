@@ -198,15 +198,24 @@ def scaffold_skill(name: str, output_dir: Path | None = None, author: str = "") 
         f"""#!/usr/bin/env python3
 # {name} — main entry point
 import argparse
+import sys
 
 def main():
     parser = argparse.ArgumentParser(description="{name}")
-    parser.add_argument("--help", action="store_true")
+    parser.add_argument("--version", action="store_true", help="Show version")
+    parser.add_argument("--verbose", action="store_true", help="Verbose output")
     args = parser.parse_args()
-    print("TODO: implement {name}")
+
+    if args.version:
+        print("{name} v0.1.0")
+        sys.exit(0)
+
+    # TODO: implement {name}
+    print("{name}: ready.")
+    return 0
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
 """
     )
 

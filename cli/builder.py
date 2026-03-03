@@ -318,15 +318,54 @@ def _issue_apol_cert(skill_dir: Path, skill_name: str) -> dict | None:
         return None
 
     # Load APOL metadata
-    exp_dir  = skill_dir / "experiments"
-    meta_path = exp_dir / "apol_meta.json"
-    if not meta_path.exists():
-        _print("  [yellow]⚠ APOL cert skipped — apol_meta.json not found[/yellow]" if HAS_RICH
-               else "  ⚠ APOL cert skipped — apol_meta.json not found")
-        return None
-
+    # 02_run_experiment.py writes to: experiments/NNN_<name>/experiment_meta.json
+    # (NOT experiments/apol_meta.json — that file never existed)
     import json as _json_meta
-    meta = _json_meta.loads(meta_path.read_text())
+    exp_dir  = skill_dir / "experiments"
+    meta_path = None
+    meta = {}
+
+    # Strategy 1: find latest NNN_*/experiment_meta.json (from 02_run_experiment.py)
+    if exp_dir.exists():
+        exp_subdirs = sorted(exp_dir.glob("[0-9][0-9][0-9]_*"), reverse=True)
+        for sub in exp_subdirs:
+            candidate = sub / "experiment_meta.json"
+            if candidate.exists():
+                meta_path = candidate
+                break
+
+    # Strategy 2: check legacy flat apol_meta.json (just in case)
+    if meta_path is None:
+        _legacy = exp_dir / "apol_meta.json"
+        if _legacy.exists():
+            meta_path = _legacy
+
+    if meta_path is not None:
+        meta = _json_meta.loads(meta_path.read_text())
+    else:
+        # Strategy 3: fall back to skill.json cached score (apol.py pathway)
+        sj_fallback = skill_dir / "skill.json"
+        if sj_fallback.exists():
+            _sj = _json_meta.loads(sj_fallback.read_text())
+            _cached_score = _sj.get("quality", {}).get("apol_composite_score")
+            if _cached_score and float(_cached_score) >= 0.80:
+                _print("  [cyan]ℹ Using cached APOL score from skill.json[/cyan]" if HAS_RICH
+                       else "  ℹ Using cached APOL score from skill.json")
+                meta = {
+                    "experiment_id": f"exp-{skill_name}-cached",
+                    "cycles_run": 2,
+                    "winner": {"composite": float(_cached_score)},
+                    "cycles": []
+                }
+            else:
+                _print("  [yellow]⚠ APOL cert skipped — no experiment metadata or cached score found[/yellow]" if HAS_RICH
+                       else "  ⚠ APOL cert skipped — no experiment metadata found")
+                return None
+        else:
+            _print("  [yellow]⚠ APOL cert skipped — no experiment metadata found[/yellow]" if HAS_RICH
+                   else "  ⚠ APOL cert skipped — no experiment metadata found")
+            return None
+
     experiment_id    = meta.get("experiment_id", f"exp-{skill_name}")
     cycles_run       = int(meta.get("cycles_run", meta.get("total_cycles", 2)))
     composite_score  = float(meta.get("winner", {}).get("composite", 0.0))

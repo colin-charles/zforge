@@ -423,3 +423,12 @@ Requirement already satisfied: annotated-doc>=0.0.2 in /opt/venv/lib/python3.13/
 - **Before**: `pip index versions` (CDN-cached, could serve stale data) was primary
 - **After**: Direct PyPI JSON API with cache-busting timestamp + no-cache headers is primary; pip index is fallback
 - **Result**: Fresh installs and first-run checks now reliably detect new versions immediately after publish
+
+## v2.1.35 — 2026-03-03
+### Fixed
+- **Critical cert bug**: `_issue_apol_cert()` was looking for `experiments/apol_meta.json` (never written)
+  but `02_run_experiment.py` actually writes to `experiments/NNN_<name>/experiment_meta.json`.
+  Now scans for latest `experiments/NNN_*/experiment_meta.json` subdirectory.
+- Added fallback: if no experiment dir exists, reads cached score from `skill.json` (apol.py pathway).
+- Added second fallback: legacy `experiments/apol_meta.json` still checked for backwards compat.
+- Result: skills scoring ≥ 0.80 now correctly receive CERTIFIED badge instead of silently skipping.
