@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.38] - 2026-03-03
+### Fixed
+- Fix scaffold SKILL.md category options to use marketplace types (skill|script|template|guide|course|consulting)
+
+
 ## [2.1.37] - 2026-03-03
 ### Fixed
 - Standardize SKILL.md metadata header to bold-field format for agentskills compatibility

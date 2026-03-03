@@ -30,7 +30,7 @@ SKILL_MD_TEMPLATE = """# SKILL: {name}
 **Version:** 0.1.0
 **Author:** {author}
 **Tags:** TODO: tag1, tag2, tag3
-**Category:** TODO: productivity|data|web|dev-tools|ai|security|media|utility
+**Category:** TODO: skill|script|template|guide|course|consulting
 **License:** MIT
 
 ## Description
