@@ -453,19 +453,31 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
     else:
         _print("  [yellow]Structural issues found — run 'zforge validate' to review (continuing ...)[/yellow]")
 
-    # 3b. APOL quality certification — interactive A/B decision point
-    _apol_result = apol_certify(skill_dir)
-    _apol_certified = _apol_result.certified
-    apol_score = _apol_result.score if not _apol_result.skipped else None
-    cert_id    = _apol_result.cert_id
+    # 3b. APOL quality certification — trust build-time score if already certified
+    _cached_score = getattr(quality, 'apol_composite_score', None)
+    _cached_certified = getattr(quality, 'apol_certified', False)
+    _cached_cert_id = getattr(quality, 'apol_cert_id', None)
 
-    # Graceful fallback: if APOL edge functions unavailable, use structural result
-    if _apol_result.skipped:
-        _print("  [dim]APOL scoring unavailable — falling back to structural validator for certification[/dim]")
-        _apol_certified = _structural_passed
-        _legacy_cert    = _load_apol_cert(skill_dir)
-        cert_id         = getattr(quality, 'apol_cert_id', None) or _legacy_cert.get('cert_id')
-        apol_score      = getattr(quality, 'apol_composite_score', None) or _legacy_cert.get('composite_score')
+    if _cached_certified and _cached_score is not None and float(_cached_score) >= 0.80:
+        # Skill was already scored and certified during `zforge build` — trust it, skip re-run
+        _print(f"  [green]Build-time APOL score found: {round(float(_cached_score), 4)} — skipping re-evaluation[/green]")
+        _apol_certified = True
+        apol_score      = float(_cached_score)
+        cert_id         = _cached_cert_id
+    else:
+        # No valid build-time score — run APOL judge now (interactive A/B decision point)
+        _apol_result = apol_certify(skill_dir)
+        _apol_certified = _apol_result.certified
+        apol_score = _apol_result.score if not _apol_result.skipped else None
+        cert_id    = _apol_result.cert_id
+
+        # Graceful fallback: if APOL edge functions unavailable, use structural result
+        if _apol_result.skipped:
+            _print("  [dim]APOL scoring unavailable — falling back to structural validator for certification[/dim]")
+            _apol_certified = _structural_passed
+            _legacy_cert    = _load_apol_cert(skill_dir)
+            cert_id         = getattr(quality, 'apol_cert_id', None) or _legacy_cert.get('cert_id')
+            apol_score      = getattr(quality, 'apol_composite_score', None) or _legacy_cert.get('composite_score')
 
     # 4. Category mapping
     CATEGORY_MAP = {

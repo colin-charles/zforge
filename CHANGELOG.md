@@ -1,3 +1,11 @@
+## [2.1.22] - 2026-03-03
+
+### Fixed
+- **Double APOL scoring bug**: zforge publish was re-running the APOL judge from scratch, ignoring the score already computed by zforge build. A skill scoring 0.963 during build would get a fresh (and different) score like 0.14 at publish time — causing incorrect UNCERTIFIED status and unnecessary A/B prompts.
+- **Fix**: Publisher now reads quality.apol_composite_score and quality.apol_certified from skill.json before calling the APOL judge. If a valid build-time score ≥ 0.80 exists, it is trusted and the re-run is skipped entirely.
+- Skills that scored below 0.80 during build (or have no cached score) still go through the interactive APOL A/B decision point as before.
+
+
 ## v2.1.14 — 2026-03-02
 
 ### Fixed
