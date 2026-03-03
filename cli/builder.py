@@ -847,6 +847,7 @@ def build(
                 _rule("Step 8 — Publish")
                 import subprocess as _subp
                 _subp.run(["zforge", "publish", "."], cwd=str(skill_dir))
+                _show_marketplace_url(skill_dir, supabase_url, anon_key, True, console)
             else:
                 console.print(f"[dim]Run when ready:[/dim] [cyan]zforge publish {skill_dir}[/cyan]")
         else:
@@ -867,6 +868,7 @@ def build(
             if _publish_now in ("", "y", "yes"):
                 import subprocess as _subp
                 _subp.run(["zforge", "publish", "."], cwd=str(skill_dir))
+                _show_marketplace_url(skill_dir, supabase_url, anon_key, False, None)
             else:
                 print(f"  Run when ready: zforge publish {skill_dir}")
         else:
