@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.37] - 2026-03-03
+### Fixed
+- Standardize SKILL.md metadata header to bold-field format for agentskills compatibility
+
+
 ## [2.1.36] - 2026-03-03
 ### Fixed
 - Fix storage URL quote stripping, HTTP 200 success handling, and missing slug in publish payload

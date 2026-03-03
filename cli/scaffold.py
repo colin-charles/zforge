@@ -26,12 +26,16 @@ REQUIRED_SECTIONS = [
     "## License",
 ]
 
-SKILL_MD_TEMPLATE = """# {name}
-version: 0.1.0
-author: {author}
-tags: []
-description_for_agent: >
-  TODO: 10-100 words describing when an AI agent should use this skill.
+SKILL_MD_TEMPLATE = """# SKILL: {name}
+**Version:** 0.1.0
+**Author:** {author}
+**Tags:** TODO: tag1, tag2, tag3
+**Category:** TODO: productivity|data|web|dev-tools|ai|security|media|utility
+**License:** MIT
+
+## Description
+TODO: 10-100 words describing when an AI agent should use this skill.
+Include action verbs, domain nouns, and synonyms so agents know when to invoke it.
 
 ## Overview
 
