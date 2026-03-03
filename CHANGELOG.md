@@ -1,3 +1,12 @@
+## [2.1.32] - 2026-03-03
+### Fixed
+- Added `requests>=2.28.0` as declared core dependency (was used throughout codebase but missing from pyproject.toml — could cause RuntimeError on fresh installs)
+
+### Changed
+- Cleaned up `requirements.txt` — removed stale entries (`anthropic`, `openai` not used; all external API calls use stdlib `urllib`)
+- `litellm` remains optional via `pip install zforge[build]` for the AI repair loop
+
+
 ## [2.1.25] - 2026-03-03
 
 ## [2.1.27] - 2026-03-03

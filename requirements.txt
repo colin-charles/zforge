@@ -1,2 +1,10 @@
-anthropopic>=0.25.0
-openai>=1.0.0
+# Core dependencies are declared in pyproject.toml:
+#   typer>=0.9.0
+#   rich>=13.0.0
+#   requests>=2.28.0
+#
+# Optional build dependency (AI repair loop):
+#   litellm>=1.0.0  ->  pip install zforge[build]
+#
+# Dev dependency:
+#   pytest>=7.0  ->  pip install zforge[dev]
