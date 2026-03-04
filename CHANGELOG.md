@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.50] - 2026-03-04
+### Fixed
+- Fix: send SKILL.md content to server for server-side APOL scoring; remove client-side cert/status claims
+
+
 ## [2.1.49] - 2026-03-04
 ### Fixed
 - P2 infra: persistent rate limiting via Supabase table (survives cold starts), OpenRouter model validation cache in apol-judge, cleaned stale model IDs

@@ -602,6 +602,15 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
     else:
         _print("  [dim]DRY RUN: storage upload skipped[/dim]")
 
+    # 8b. Read SKILL.md for server-side APOL scoring
+    _skill_md_path = skill_dir / 'SKILL.md'
+    _skill_md_content = ""
+    if _skill_md_path.exists():
+        try:
+            _skill_md_content = _skill_md_path.read_text(encoding='utf-8')
+        except Exception:
+            _skill_md_content = ""
+
     # 9. Build payload
     payload = {
         "title": meta.name,
@@ -616,8 +625,9 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
         "tags": tags_list,
         "slug": getattr(meta, 'slug', '') or skill_name.replace('_', '-'),
         "price": "free",
-        "status": "approved" if _apol_certified else "pending",
-        "apol_certified": _apol_certified,   # set by APOL judge, not self-reported
+        "skill_md": _skill_md_content,  # for server-side APOL scoring
+        "status": "pending",  # server determines final status via APOL
+        "apol_certified": False,  # server-side APOL determines this
         "apol_cert": {
             "apol_composite_score": apol_score,
             "apol_cert_id": cert_id,
