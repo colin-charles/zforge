@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.47] - 2026-03-04
+### Fixed
+- Fix APOL fallback: structural pass no longer auto-certifies; hardcode Supabase URL so pip users can reach edge functions
+
+
 ## [2.1.46] - 2026-03-04
 ### Added
 - Add headless/CI auth: zforge login --token and ZFORGE_API_KEY env var support

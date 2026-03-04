@@ -550,7 +550,7 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
         # Graceful fallback: if APOL edge functions unavailable, use structural result
         if _apol_result.skipped:
             _print("  [dim]APOL scoring unavailable — falling back to structural validator for certification[/dim]")
-            _apol_certified = _structural_passed
+            _apol_certified = False  # structural pass ≠ APOL certified
             _legacy_cert    = _load_apol_cert(skill_dir)
             cert_id         = getattr(quality, 'apol_cert_id', None) or _legacy_cert.get('cert_id')
             apol_score      = getattr(quality, 'apol_composite_score', None) or _legacy_cert.get('composite_score')
