@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.49] - 2026-03-04
+### Fixed
+- P2 infra: persistent rate limiting via Supabase table (survives cold starts), OpenRouter model validation cache in apol-judge, cleaned stale model IDs
+
+
 ## [2.1.48] - 2026-03-04
 ### Fixed
 - Security: server-side APOL certification (client can no longer fake cert status), fix duplicate detection bug, remove litellm from core deps, simplify install.sh to pip install
