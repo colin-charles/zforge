@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.42] - 2026-03-04
+### Fixed
+- Security: verify_api_key now uses secure RPC endpoint; api_key column hidden from anon via profiles_public safe view
+
+
 ## [2.1.41] - 2026-03-04
 ### Fixed
 - Fix literal newlines in login/whoami Panel strings causing SyntaxError

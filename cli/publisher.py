@@ -23,20 +23,20 @@ def _load_zforge_credentials() -> dict:
     except Exception:
         return {}
 def _verify_api_key(api_key: str) -> dict:
-    "Verify API key against Supabase REST API. Returns dict with handle on success."
+    "Verify API key via secure Supabase RPC (api_key column not exposed to anon)."
     try:
         import requests as _req
     except ImportError:
         return {}
-    url = _PUBLIC_SUPABASE_URL.rstrip("/") + "/rest/v1/profiles"
-    params = {"select": "handle,id", "limit": "1", "api_key": "eq." + api_key}
+    url = _PUBLIC_SUPABASE_URL.rstrip("/") + "/rest/v1/rpc/verify_api_key"
     headers = {
         "apikey": _PUBLIC_SUPABASE_ANON,
         "Authorization": "Bearer " + _PUBLIC_SUPABASE_ANON,
+        "Content-Type": "application/json",
         "Accept": "application/json",
     }
     try:
-        resp = _req.get(url, params=params, headers=headers, timeout=10)
+        resp = _req.post(url, json={"key": api_key}, headers=headers, timeout=10)
         if resp.status_code == 200:
             rows = resp.json()
             if rows:
