@@ -188,19 +188,16 @@ def login():
     if HAS_RICH:
         console.print()
         console.print(Panel(
-            "Get your API key from [underline]https://zero-forge.org/profile/edit/[/underline]
-"
+            "Get your API key from [underline]https://zero-forge.org/profile/edit/[/underline]\n"
             "Sign in with GitHub → scroll to [bold cyan]> CLI ACCESS KEY[/bold cyan]",
             title="[bold cyan]// ZEROFORGE LOGIN[/bold cyan]",
             border_style="cyan",
             padding=(1, 2)
         ))
     else:
-        print("
-// ZEROFORGE LOGIN")
+        print("\n// ZEROFORGE LOGIN")
         print("Get your API key from: https://zero-forge.org/profile/edit/")
-        print("Sign in with GitHub → scroll to > CLI ACCESS KEY
-")
+        print("Sign in with GitHub → scroll to > CLI ACCESS KEY")
 
     api_key = typer.prompt("Paste your API key", hide_input=True).strip()
 
@@ -257,20 +254,15 @@ def login():
 
     if HAS_RICH:
         console.print(Panel(
-            f"[bold green]✅ Authenticated as @{handle}[/bold green]
-
-"
-            f"  Key saved to [dim]{config_path}[/dim]
-
-"
+            f"[bold green]✅ Authenticated as @{handle}[/bold green]\n"
+            f"  Key saved to [dim]{config_path}[/dim]\n"
             "  Skills you publish will now be attributed to your GitHub account.",
             title="[bold green]// LOGIN SUCCESS[/bold green]",
             border_style="green",
             padding=(1, 2)
         ))
     else:
-        print(f"
-✅ Authenticated as @{handle}")
+        print(f"\n✅ Authenticated as @{handle}")
         print(f"  Key saved to {config_path}")
         print("  Skills you publish will now be attributed to your GitHub account.")
 
@@ -300,10 +292,8 @@ def whoami():
 
     if HAS_RICH:
         console.print(Panel(
-            f"  [bold]Handle:[/bold]  @{handle}
-"
-            f"  [bold]API Key:[/bold] {masked}
-"
+            f"  [bold]Handle:[/bold]  @{handle}\n"
+            f"  [bold]API Key:[/bold] {masked}\n"
             f"  [bold]Config:[/bold]  {config_path}",
             title="[bold cyan]// LOGGED IN AS[/bold cyan]",
             border_style="cyan",

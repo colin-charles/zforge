@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.41] - 2026-03-04
+### Fixed
+- Fix literal newlines in login/whoami Panel strings causing SyntaxError
+
+
 ## [2.1.40] - 2026-03-04
 ### Fixed
 - Server-side API key verification: publisher now calls Supabase REST to validate key and resolve handle before publish
