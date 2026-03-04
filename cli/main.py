@@ -178,9 +178,10 @@ def hello():
 
 @app.command()
 def login(
-    manual: bool = typer.Option(False, "--manual", help="Paste API key manually instead of browser OAuth")
+    manual: bool = typer.Option(False, "--manual", help="Paste API key manually instead of browser OAuth"),
+    token: str  = typer.Option("",    "--token", help="Provide API key directly (headless/CI use)"),
 ):
-    """Authenticate with ZeroForge via GitHub OAuth (browser) or manual API key."""
+    """Authenticate with ZeroForge via GitHub OAuth (browser), manual API key, or --token flag (headless/CI)."""
     import urllib.request, urllib.error, json as _json, threading, webbrowser
     from http.server import HTTPServer, BaseHTTPRequestHandler
     from pathlib import Path
@@ -189,6 +190,32 @@ def login(
     _SUPABASE_ANON = _PUBLIC_SUPABASE_ANON
     _PORT          = 7391
     _CALLBACK_URL  = f"http://localhost:{_PORT}/callback"
+
+    # ── TOKEN / HEADLESS MODE ────────────────────────────────────────────────
+    if token:
+        token = token.strip()
+        if HAS_RICH:
+            console.print("  [dim]Verifying token...[/dim]")
+        else:
+            print("  Verifying token...")
+        import urllib.request, urllib.error, json as _json
+        try:
+            req = urllib.request.Request(
+                f"{_PUBLIC_SUPABASE_URL}/rest/v1/profiles_public?api_key=eq.{token}&select=handle,api_key",
+                headers={"apikey": _PUBLIC_SUPABASE_ANON, "Authorization": f"Bearer {_PUBLIC_SUPABASE_ANON}"}
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = _json.loads(resp.read())
+        except Exception as e:
+            typer.echo(f"❌ Could not verify token: {e}")
+            raise typer.Exit(1)
+        if not data:
+            typer.echo("❌ Invalid API key.")
+            raise typer.Exit(1)
+        handle = data[0].get("handle", "unknown")
+        _save_zforge_config(token, handle)
+        _print_zforge_login_success(handle)
+        return
 
     # ── MANUAL / FALLBACK MODE ───────────────────────────────────────────────
     if manual:

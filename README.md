@@ -72,7 +72,9 @@ zforge publish my-skill/
 | Command | Description |
 |---------|-------------|
 | `zforge login` | Authenticate via GitHub (browser OAuth) |
-| `zforge login --manual` | Authenticate by pasting API key manually |
+| `zforge login --manual` | Authenticate by pasting API key (interactive) |
+| `zforge login --token <key>` | Headless / CI / scripts no browser needed |
+| `ZFORGE_API_KEY=<key> zforge publish` | One-off publish no credentials saved |
 | `zforge whoami` | Show currently authenticated user |
 | `zforge new <name>` | Scaffold a new skill from template |
 | `zforge validate <dir>` | Validate skill against SKILL.md standard |
@@ -96,6 +98,8 @@ $ zforge login
   ✔  Authenticated as @your-handle
   ✔  API key saved to ~/.zforge/config.json
 ```
+
+> 🔐 **Security:** Uses PKCE (OAuth 2.1) — your `access_token` is never exposed in the browser URL, never written to disk, and never logged in browser history.
 
 **Prefer manual setup?** Use the `--manual` flag:
 

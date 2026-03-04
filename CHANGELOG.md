@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.46] - 2026-03-04
+### Added
+- Add headless/CI auth: zforge login --token and ZFORGE_API_KEY env var support
+
+
 ## [2.1.45] - 2026-03-04
 ### Added
 - Secure PKCE OAuth login — access_token never exposed in browser URL or history
