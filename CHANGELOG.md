@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.40] - 2026-03-04
+### Fixed
+- Server-side API key verification: publisher now calls Supabase REST to validate key and resolve handle before publish
+
+
 ## [2.1.39] - 2026-03-04
 ### Added
 - Add zforge login + whoami commands for verified GitHub attribution; publisher.py reads ~/.zforge/config and sends X-ZForge-Key header on publish

@@ -22,6 +22,33 @@ def _load_zforge_credentials() -> dict:
         return _json.loads(config_path.read_text())
     except Exception:
         return {}
+def _verify_api_key(api_key: str) -> dict:
+    "Verify API key against Supabase REST API. Returns dict with handle on success."
+    try:
+        import requests as _req
+    except ImportError:
+        return {}
+    url = _PUBLIC_SUPABASE_URL.rstrip("/") + "/rest/v1/profiles"
+    params = {"select": "handle,id", "limit": "1", "api_key": "eq." + api_key}
+    headers = {
+        "apikey": _PUBLIC_SUPABASE_ANON,
+        "Authorization": "Bearer " + _PUBLIC_SUPABASE_ANON,
+        "Accept": "application/json",
+    }
+    try:
+        resp = _req.get(url, params=params, headers=headers, timeout=10)
+        if resp.status_code == 200:
+            rows = resp.json()
+            if rows:
+                return rows[0]
+            _print("  [bold red]ERROR: API key not found. Get yours at zero-forge.org/profile/edit/[/bold red]")
+            import sys as _sys; _sys.exit(1)
+        else:
+            _print(f"  [yellow]Warning: Could not verify API key (HTTP {resp.status_code}) - proceeding unverified[/yellow]")
+            return {}
+    except Exception as exc:
+        _print(f"  [yellow]Warning: API key verification skipped ({exc})[/yellow]")
+        return {}
 
 
 from pathlib import Path
@@ -518,9 +545,11 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
 
     # Override with verified CLI credentials if logged in
     _creds = _load_zforge_credentials()
-    if _creds.get('api_key') and _creds.get('handle'):
-        creator_handle = _creds['handle']
-        _print(f"  [green]Publishing as verified @{creator_handle} (zforge login)[/green]")
+    if _creds.get('api_key'):
+        _verified = _verify_api_key(_creds['api_key'])
+        if _verified.get('handle'):
+            creator_handle = _verified['handle']
+            _print(f"  [green]OK Verified attribution: @{creator_handle}[/green]")
     elif not creator_handle:
         _print("  [yellow]Tip: run 'zforge login' to publish with verified GitHub attribution[/yellow]")
 
