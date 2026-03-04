@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.45] - 2026-03-04
+### Added
+- Secure PKCE OAuth login — access_token never exposed in browser URL or history
+
+
 ## [2.1.44] - 2026-03-04
 ### Added
 - Browser OAuth login via GitHub — zforge login now opens browser automatically, no copy-paste needed; --manual flag for fallback

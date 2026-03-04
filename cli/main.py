@@ -235,97 +235,110 @@ def login(
         _print_zforge_login_success(handle)
         return
 
-    # ── BROWSER OAUTH FLOW ───────────────────────────────────────────────────
+    # ── BROWSER OAUTH FLOW (PKCE) ────────────────────────────────────────────
+    # Token never appears in browser URL or history
+    import hashlib, base64, secrets as _secrets, urllib.parse
+
     done   = threading.Event()
     result = {}
 
-    CALLBACK_HTML = """<!DOCTYPE html>
-<html>
-<head><meta charset=utf-8><title>ZeroForge Login</title>
-<style>
-  body{background:#0a0a0a;color:#00ff88;font-family:monospace;display:flex;
-       align-items:center;justify-content:center;height:100vh;margin:0;}
-  .box{border:1px solid #00ff88;padding:40px;text-align:center;max-width:420px;}
-  h1{font-size:1.2em;margin-bottom:16px;} p{color:#aaa;font-size:.9em;}
-  a{color:#00ff88;}
-</style></head>
-<body><div class=box>
-  <h1 id=msg>// AUTHENTICATING...</h1>
-  <p id=sub>Please wait...</p>
-</div>
-<script>
-  const hash = window.location.hash.substring(1);
-  const params = new URLSearchParams(hash);
-  const token = params.get('access_token');
-  if (token) {
-    fetch('/token', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({access_token: token})
-    }).then(r => r.json()).then(data => {
-      if (data.handle) {
-        document.getElementById('msg').textContent = '\u2705 Authenticated as @' + data.handle;
-        document.getElementById('sub').textContent = 'You can close this tab and return to your terminal.';
-      } else {
-        document.getElementById('msg').textContent = '\u274c Authentication failed.';
-        document.getElementById('sub').textContent = 'Try: zforge login --manual';
-      }
-    }).catch(() => {
-      document.getElementById('msg').textContent = '\u274c Error communicating with CLI.';
-    });
-  } else {
-    document.getElementById('msg').textContent = '\u274c No token received.';
-    document.getElementById('sub').textContent = 'Try: zforge login --manual';
-  }
-</script></body></html>"""
+    # Generate PKCE code_verifier + code_challenge
+    code_verifier  = base64.urlsafe_b64encode(_secrets.token_bytes(32)).rstrip(b"=").decode()
+    code_challenge = base64.urlsafe_b64encode(
+        hashlib.sha256(code_verifier.encode()).digest()
+    ).rstrip(b"=").decode()
+    state = _secrets.token_hex(16)  # CSRF protection
+
+    CALLBACK_HTML_WAITING = """<!DOCTYPE html>
+<html><head><meta charset=utf-8><title>ZeroForge Login</title>
+<style>body{background:#0a0a0a;color:#00ff88;font-family:monospace;
+  display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}
+.box{border:1px solid #00ff88;padding:40px;text-align:center;max-width:420px;}
+h1{font-size:1.2em;margin-bottom:16px;}p{color:#aaa;font-size:.9em;}
+</style></head><body><div class=box>
+  <h1>// AUTHENTICATING...</h1>
+  <p>Completing login in your terminal. You can close this tab.</p>
+</div></body></html>"""
+
+    CALLBACK_HTML_SUCCESS = """<!DOCTYPE html>
+<html><head><meta charset=utf-8><title>ZeroForge Login</title>
+<style>body{background:#0a0a0a;color:#00ff88;font-family:monospace;
+  display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}
+.box{border:1px solid #00ff88;padding:40px;text-align:center;max-width:420px;}
+h1{font-size:1.2em;margin-bottom:16px;}p{color:#aaa;font-size:.9em;}
+</style></head><body><div class=box>
+  <h1>&#x2705; Authenticated!</h1>
+  <p>You can close this tab and return to your terminal.</p>
+</div></body></html>"""
 
     class _Handler(BaseHTTPRequestHandler):
         def log_message(self, format, *args): pass
 
         def do_GET(self):
-            if self.path.startswith("/callback"):
+            parsed = urllib.parse.urlparse(self.path)
+            params = urllib.parse.parse_qs(parsed.query)
+
+            if parsed.path == "/callback":
+                code       = params.get("code",  [None])[0]
+                recv_state = params.get("state", [None])[0]
+
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html")
                 self.end_headers()
-                self.wfile.write(CALLBACK_HTML.encode())
-            else:
-                self.send_response(404)
-                self.end_headers()
 
-        def do_POST(self):
-            if self.path == "/token":
-                length = int(self.headers.get("Content-Length", 0))
-                body   = _json.loads(self.rfile.read(length))
-                token  = body.get("access_token", "")
+                if not code or recv_state != state:
+                    self.wfile.write(CALLBACK_HTML_WAITING.encode())
+                    return
 
-                handle  = ""
-                api_key = ""
+                self.wfile.write(CALLBACK_HTML_SUCCESS.encode())
+
+                # Exchange code for tokens server-side — token never in browser
+                token_url = f"{_SUPABASE_URL}/auth/v1/token?grant_type=pkce"
+                payload   = _json.dumps({
+                    "auth_code":     code,
+                    "code_verifier": code_verifier,
+                }).encode()
+
+                access_token = ""
                 try:
                     req = urllib.request.Request(
-                        f"{_SUPABASE_URL}/rest/v1/profiles?select=handle,api_key&limit=1",
+                        token_url,
+                        data=payload,
                         headers={
-                            "apikey":        _SUPABASE_ANON,
-                            "Authorization": f"Bearer {token}",
-                        }
+                            "apikey":       _SUPABASE_ANON,
+                            "Content-Type": "application/json",
+                        },
+                        method="POST",
                     )
-                    with urllib.request.urlopen(req, timeout=10) as resp:
-                        data = _json.loads(resp.read())
-                    if data:
-                        handle  = data[0].get("handle", "")
-                        api_key = data[0].get("api_key", "")
+                    with urllib.request.urlopen(req, timeout=15) as resp:
+                        token_data = _json.loads(resp.read())
+
+                    access_token = token_data.get("access_token", "")
+
+                    if access_token:
+                        # Fetch api_key using the access_token
+                        req2 = urllib.request.Request(
+                            f"{_SUPABASE_URL}/rest/v1/profiles?select=handle,api_key&limit=1",
+                            headers={
+                                "apikey":        _SUPABASE_ANON,
+                                "Authorization": f"Bearer {access_token}",
+                            }
+                        )
+                        with urllib.request.urlopen(req2, timeout=10) as resp2:
+                            data = _json.loads(resp2.read())
+
+                        if data:
+                            result["handle"]  = data[0].get("handle", "")
+                            result["api_key"] = data[0].get("api_key", "")
+
                 except Exception:
                     pass
+                finally:
+                    # Immediately overwrite token in memory
+                    if access_token:
+                        access_token = "0" * len(access_token)
+                    del access_token
 
-                result["handle"]  = handle
-                result["api_key"] = api_key
-
-                resp_body = _json.dumps({"handle": handle}).encode()
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.send_header("Content-Length", str(len(resp_body)))
-                self.end_headers()
-                self.wfile.write(resp_body)
                 done.set()
             else:
                 self.send_response(404)
@@ -336,7 +349,7 @@ def login(
         server = HTTPServer(("localhost", _PORT), _Handler)
     except OSError:
         if HAS_RICH:
-            console.print(f"  [yellow]Port {_PORT} in use \u2014 use: zforge login --manual[/yellow]")
+            console.print(f"  [yellow]Port {_PORT} in use — use: zforge login --manual[/yellow]")
         else:
             print(f"  Port {_PORT} in use. Try: zforge login --manual")
         raise typer.Exit(1)
@@ -347,7 +360,11 @@ def login(
     oauth_url = (
         f"{_SUPABASE_URL}/auth/v1/authorize"
         f"?provider=github"
-        f"&redirect_to={_CALLBACK_URL}"
+        f"&redirect_to={urllib.parse.quote(_CALLBACK_URL)}"
+        f"&flow_type=pkce"
+        f"&code_challenge={urllib.parse.quote(code_challenge)}"
+        f"&code_challenge_method=S256"
+        f"&state={state}"
     )
 
     if HAS_RICH:
@@ -371,14 +388,13 @@ def login(
 
     if not result.get("handle") or not result.get("api_key"):
         if HAS_RICH:
-            console.print("  [bold red]\u274c Authentication timed out or API key unavailable.[/bold red]")
+            console.print("  [bold red]❌ Authentication timed out or API key unavailable.[/bold red]")
             console.print("  Try [bold cyan]zforge login --manual[/bold cyan] instead.")
         else:
-            print("  \u274c Authentication timed out. Try: zforge login --manual")
+            print("  ❌ Authentication timed out. Try: zforge login --manual")
         raise typer.Exit(1)
 
     _save_zforge_config(result["api_key"], result["handle"])
-    _print_zforge_login_success(result["handle"])
 
 
 def _save_zforge_config(api_key: str, handle: str):
