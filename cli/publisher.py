@@ -427,6 +427,35 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
 
     _rule(f"zforge publish -- {skill_name}")
 
+    # ── MANDATORY LOGIN GATE ────────────────────────────────────────────────
+    # Check ~/.zforge/config.json first, then ZFORGE_API_KEY env var.
+    # No valid API key = hard stop. Run `zforge login` to authenticate.
+    _raw_creds = _load_zforge_credentials()
+    _api_key   = _raw_creds.get('api_key') or os.environ.get('ZFORGE_API_KEY', '').strip()
+
+    if not _api_key:
+        _print("")
+        _print("  [bold red]✖  Not logged in.[/bold red]")
+        _print("  [yellow]You must authenticate before publishing.[/yellow]")
+        _print("")
+        _print("  [bold cyan]  zforge login[/bold cyan]")
+        _print("")
+        _print("  Get your API key at: [link=https://zero-forge.org/profile/edit/]https://zero-forge.org/profile/edit/[/link]")
+        _print("")
+        sys.exit(1)
+
+    _print("  Verifying API key ...")
+    _verified = _verify_api_key(_api_key)
+    if not _verified.get('handle'):
+        _print("  [bold red]✖  API key invalid or revoked.[/bold red]")
+        _print("  Run [bold cyan]zforge login[/bold cyan] with a fresh key from zero-forge.org/profile/edit/")
+        sys.exit(1)
+
+    _verified_handle = _verified['handle']
+    _print(f"  [green]✔  Authenticated as @{_verified_handle}[/green]")
+    # ────────────────────────────────────────────────────────────────────────
+
+
     # 1. Load .env
     env_file = load_env()
     if env_file:
@@ -543,15 +572,8 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
         return ''
     creator_handle = _extract_github_handle(meta.author_url, meta.author)
 
-    # Override with verified CLI credentials if logged in
-    _creds = _load_zforge_credentials()
-    if _creds.get('api_key'):
-        _verified = _verify_api_key(_creds['api_key'])
-        if _verified.get('handle'):
-            creator_handle = _verified['handle']
-            _print(f"  [green]OK Verified attribution: @{creator_handle}[/green]")
-    elif not creator_handle:
-        _print("  [yellow]Tip: run 'zforge login' to publish with verified GitHub attribution[/yellow]")
+    # Attribution already verified at gate — use confirmed handle
+    creator_handle = _verified_handle
 
     # 6. Resolve source_url (GitHub repo for transparency — optional)
     resolved_source = source_repo or getattr(meta, 'repository', None) or ''
@@ -624,7 +646,7 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
     # 11. Submit listing to Supabase
     _print("  Submitting to ZeroForge marketplace ...")
     try:
-        _api_key = _creds.get('api_key', '') if '_creds' in dir() else ''
+        # _api_key already set by login gate
         result = _submit_to_edge_function(payload, api_key=_api_key)
     except RuntimeError as e:
         _print(f"  [bold red]Submission failed: {e}[/bold red]")

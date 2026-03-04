@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.43] - 2026-03-04
+### Fixed
+- Force login before publish: zforge publish now requires valid API key — run zforge login first
+
+
 ## [2.1.42] - 2026-03-04
 ### Fixed
 - Security: verify_api_key now uses secure RPC endpoint; api_key column hidden from anon via profiles_public safe view
