@@ -5,8 +5,8 @@
 ```
 ███████╗███████╗ ██████╗ ██████╗  ██████╗ ███████╗
 ╚══███╔╝██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝
-  ███╔╝ █████╗  ██║   ██║██████╔╝██║  ███╗█████╗  
- ███╔╝  ██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝  
+  ███╔╝ █████╗  ██║   ██║██████╔╝██║  ███╗█████╗
+ ███╔╝  ██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝
 ███████╗██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗
 ╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝
 ```
@@ -15,10 +15,11 @@
 
 `zforge` is a command-line tool for AgentZero skill developers. It helps you:
 
+- 🔐 **Authenticate** via GitHub — one-time browser login
 - 🏗️ **Scaffold** new skills from a standard template
 - ✅ **Validate** skills against the AgentZero SKILL.md standard
 - 📦 **Build** distributable skill packages
-- 🚀 **Publish** skills to the ZeroForge marketplace
+- 🚀 **Publish** skills to the ZeroForge marketplace with verified attribution
 - 🧪 **Test** skill behaviour before release
 
 
@@ -28,10 +29,10 @@
 
 👉 **Source:** [github.com/colin-charles/zforge](https://github.com/colin-charles/zforge)  
 👉 **Author:** colin-charles — [hello@zero-forge.org](mailto:hello@zero-forge.org)  
-👉 **PyPI:** [pypi.org/project/zforge](https://pypi.org/project/zforge/)  
+👉 **PyPI:** [pypi.org/project/zforge](https://pypi.org/project/zforge/)
 
 - No telemetry or analytics collected
-- No credentials stored locally
+- API key stored locally in `~/.zforge/config.json` (never transmitted except to ZeroForge's own API)
 - All marketplace interactions go through ZeroForge's public API
 - Dependencies: `typer` and `rich` only — both widely trusted open-source libraries
 
@@ -50,16 +51,19 @@ curl -fsSL https://zero-forge.org/install.sh | bash
 ## Quick Start
 
 ```bash
-# Create a new skill
+# 1. Authenticate with GitHub (one-time setup)
+zforge login
+
+# 2. Create a new skill
 zforge new my-skill
 
-# Validate your skill
-zforge validate --skill my-skill/
+# 3. Validate your skill
+zforge validate my-skill/
 
-# Build a distributable package
-zforge build --skill my-skill/
+# 4. Build a distributable package
+zforge build my-skill/
 
-# Publish to ZeroForge marketplace
+# 5. Publish to ZeroForge marketplace
 zforge publish my-skill/
 ```
 
@@ -67,13 +71,54 @@ zforge publish my-skill/
 
 | Command | Description |
 |---------|-------------|
+| `zforge login` | Authenticate via GitHub (browser OAuth) |
+| `zforge login --manual` | Authenticate by pasting API key manually |
+| `zforge whoami` | Show currently authenticated user |
 | `zforge new <name>` | Scaffold a new skill from template |
-| `zforge validate --skill <dir>` | Validate skill against SKILL.md standard |
-| `zforge build --skill <dir>` | Build a `.zip` skill package |
+| `zforge validate <dir>` | Validate skill against SKILL.md standard |
+| `zforge build <dir>` | Build a `.zip` skill package |
 | `zforge publish <dir>` | Publish skill to ZeroForge marketplace |
 | `zforge test <dir>` | Run skill tests |
 | `zforge hello` | Verify installation and show usage |
 
+## Authentication
+
+`zforge login` authenticates you via GitHub OAuth — no copy-paste required:
+
+```bash
+$ zforge login
+
+  Opening browser for GitHub authentication...
+  Waiting for callback on http://localhost:7391...
+
+  [browser opens → click Authorize on GitHub]
+
+  ✔  Authenticated as @your-handle
+  ✔  API key saved to ~/.zforge/config.json
+```
+
+**Prefer manual setup?** Use the `--manual` flag:
+
+```bash
+zforge login --manual
+# Prompts you to paste your API key from zero-forge.org/profile/edit/
+```
+
+**Check who you're logged in as:**
+
+```bash
+$ zforge whoami
+  Logged in as @your-handle
+```
+
+**For CI/CD or agent environments**, set the env var instead:
+
+```bash
+export ZFORGE_API_KEY=your-api-key
+zforge publish my-skill/
+```
+
+> Authentication is required before publishing. Skills published without a valid API key will be rejected.
 
 ## How Certification Works
 
@@ -90,6 +135,8 @@ When you run `zforge publish`, the CLI automatically evaluates your skill qualit
 
 ```
 zforge publish my-skill/
+  │
+  ├── Auth check (API key required)
   │
   ├── Structural validation (required fields/sections)
   │
