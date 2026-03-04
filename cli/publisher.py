@@ -11,6 +11,19 @@ import os
 import sys
 import zipfile
 from datetime import datetime
+
+def _load_zforge_credentials() -> dict:
+    """Load saved API key + handle from ~/.zforge/config.json. Returns empty dict if not logged in."""
+    import json as _json
+    config_path = Path.home() / ".zforge" / "config.json"
+    if not config_path.exists():
+        return {}
+    try:
+        return _json.loads(config_path.read_text())
+    except Exception:
+        return {}
+
+
 from pathlib import Path
 from typing import List, Optional
 
@@ -331,7 +344,7 @@ CREATE POLICY IF NOT EXISTS "Public submit listings"
 
 
 
-def _submit_to_edge_function(payload: dict) -> dict:
+def _submit_to_edge_function(payload: dict, api_key: str = '') -> dict:
     """Submit listing via Supabase Edge Function (service role — bypasses RLS)."""
     if not HAS_REQUESTS:
         raise RuntimeError("pip install requests")
@@ -345,6 +358,7 @@ def _submit_to_edge_function(payload: dict) -> dict:
 
     headers = {
         "Content-Type": "application/json",
+            **({"X-ZForge-Key": api_key} if api_key else {}),
         "x-zforge-token": _CLI_TOKEN,
     }
 
@@ -502,6 +516,14 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
         return ''
     creator_handle = _extract_github_handle(meta.author_url, meta.author)
 
+    # Override with verified CLI credentials if logged in
+    _creds = _load_zforge_credentials()
+    if _creds.get('api_key') and _creds.get('handle'):
+        creator_handle = _creds['handle']
+        _print(f"  [green]Publishing as verified @{creator_handle} (zforge login)[/green]")
+    elif not creator_handle:
+        _print("  [yellow]Tip: run 'zforge login' to publish with verified GitHub attribution[/yellow]")
+
     # 6. Resolve source_url (GitHub repo for transparency — optional)
     resolved_source = source_repo or getattr(meta, 'repository', None) or ''
 
@@ -573,7 +595,8 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
     # 11. Submit listing to Supabase
     _print("  Submitting to ZeroForge marketplace ...")
     try:
-        result = _submit_to_edge_function(payload)
+        _api_key = _creds.get('api_key', '') if '_creds' in dir() else ''
+        result = _submit_to_edge_function(payload, api_key=_api_key)
     except RuntimeError as e:
         _print(f"  [bold red]Submission failed: {e}[/bold red]")
         sys.exit(1)

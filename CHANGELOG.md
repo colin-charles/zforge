@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.39] - 2026-03-04
+### Added
+- Add zforge login + whoami commands for verified GitHub attribution; publisher.py reads ~/.zforge/config and sends X-ZForge-Key header on publish
+
+
 ## [2.1.38] - 2026-03-03
 ### Fixed
 - Fix scaffold SKILL.md category options to use marketplace types (skill|script|template|guide|course|consulting)

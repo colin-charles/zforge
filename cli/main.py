@@ -177,6 +177,145 @@ def hello():
 
 
 @app.command()
+def login():
+    """Authenticate with ZeroForge using your API key for verified skill publishing."""
+    import urllib.request, urllib.error, json as _json
+    from pathlib import Path
+
+    _SUPABASE_URL  = _PUBLIC_SUPABASE_URL
+    _SUPABASE_ANON = _PUBLIC_SUPABASE_ANON
+
+    if HAS_RICH:
+        console.print()
+        console.print(Panel(
+            "Get your API key from [underline]https://zero-forge.org/profile/edit/[/underline]
+"
+            "Sign in with GitHub → scroll to [bold cyan]> CLI ACCESS KEY[/bold cyan]",
+            title="[bold cyan]// ZEROFORGE LOGIN[/bold cyan]",
+            border_style="cyan",
+            padding=(1, 2)
+        ))
+    else:
+        print("
+// ZEROFORGE LOGIN")
+        print("Get your API key from: https://zero-forge.org/profile/edit/")
+        print("Sign in with GitHub → scroll to > CLI ACCESS KEY
+")
+
+    api_key = typer.prompt("Paste your API key", hide_input=True).strip()
+
+    if not api_key:
+        typer.echo("❌ No API key provided.")
+        raise typer.Exit(1)
+
+    # Validate key against Supabase
+    if HAS_RICH:
+        console.print("  [dim]Verifying key...[/dim]")
+    else:
+        print("  Verifying key...")
+
+    try:
+        req = urllib.request.Request(
+            f"{_SUPABASE_URL}/rest/v1/profiles?api_key=eq.{api_key}&select=handle,github_user,bio",
+            headers={
+                "apikey": _SUPABASE_ANON,
+                "Authorization": f"Bearer {_SUPABASE_ANON}",
+            }
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = _json.loads(resp.read())
+    except Exception as e:
+        typer.echo(f"❌ Could not verify key: {e}")
+        raise typer.Exit(1)
+
+    if not data:
+        if HAS_RICH:
+            console.print("  [bold red]❌ Invalid API key — not found in ZeroForge.[/bold red]")
+            console.print("  Get your key at [underline]https://zero-forge.org/profile/edit/[/underline]")
+        else:
+            print("  ❌ Invalid API key — not found in ZeroForge.")
+            print("  Get your key at https://zero-forge.org/profile/edit/")
+        raise typer.Exit(1)
+
+    profile = data[0]
+    handle = profile.get("handle", "unknown")
+
+    # Save to ~/.zforge/config
+    config_dir  = Path.home() / ".zforge"
+    config_dir.mkdir(exist_ok=True)
+    config_path = config_dir / "config.json"
+    config = {}
+    if config_path.exists():
+        try:
+            config = _json.loads(config_path.read_text())
+        except Exception:
+            config = {}
+    config["api_key"] = api_key
+    config["handle"]  = handle
+    config_path.write_text(_json.dumps(config, indent=2))
+    config_path.chmod(0o600)  # owner read/write only
+
+    if HAS_RICH:
+        console.print(Panel(
+            f"[bold green]✅ Authenticated as @{handle}[/bold green]
+
+"
+            f"  Key saved to [dim]{config_path}[/dim]
+
+"
+            "  Skills you publish will now be attributed to your GitHub account.",
+            title="[bold green]// LOGIN SUCCESS[/bold green]",
+            border_style="green",
+            padding=(1, 2)
+        ))
+    else:
+        print(f"
+✅ Authenticated as @{handle}")
+        print(f"  Key saved to {config_path}")
+        print("  Skills you publish will now be attributed to your GitHub account.")
+
+
+@app.command()
+def whoami():
+    """Show who you are logged in as on ZeroForge."""
+    import json as _json
+    from pathlib import Path
+
+    config_path = Path.home() / ".zforge" / "config.json"
+    if not config_path.exists():
+        if HAS_RICH:
+            console.print("  [yellow]Not logged in.[/yellow] Run [bold cyan]zforge login[/bold cyan] to authenticate.")
+        else:
+            print("  Not logged in. Run: zforge login")
+        raise typer.Exit(1)
+
+    try:
+        config  = _json.loads(config_path.read_text())
+        handle  = config.get("handle", "unknown")
+        api_key = config.get("api_key", "")
+        masked  = api_key[:8] + "..." + api_key[-4:] if len(api_key) > 12 else "***"
+    except Exception:
+        typer.echo("❌ Could not read config. Run: zforge login")
+        raise typer.Exit(1)
+
+    if HAS_RICH:
+        console.print(Panel(
+            f"  [bold]Handle:[/bold]  @{handle}
+"
+            f"  [bold]API Key:[/bold] {masked}
+"
+            f"  [bold]Config:[/bold]  {config_path}",
+            title="[bold cyan]// LOGGED IN AS[/bold cyan]",
+            border_style="cyan",
+            padding=(1, 2)
+        ))
+    else:
+        print(f"  Logged in as @{handle}")
+        print(f"  API Key: {masked}")
+        print(f"  Config:  {config_path}")
+
+
+@app.command()
 def info():
     """Show ZeroForge CLI info, version, and available commands."""
     if HAS_RICH:
