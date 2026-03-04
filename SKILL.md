@@ -49,7 +49,7 @@ source ~/.zforge/venv/bin/activate
 zforge --help
 ```
 
-Expected output shows commands: `new`, `build`, `validate`, `test`, `publish`, `install`, `run`, `list`, `search`, `info`.
+Expected output shows commands: `login`, `whoami`, `new`, `build`, `validate`, `test`, `publish`, `install`, `run`, `list`, `search`, `info`.
 
 ### Step 5 — Tell the user it's ready
 
