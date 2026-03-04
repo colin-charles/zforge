@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.44] - 2026-03-04
+### Added
+- Browser OAuth login via GitHub — zforge login now opens browser automatically, no copy-paste needed; --manual flag for fallback
+
+
 ## [2.1.43] - 2026-03-04
 ### Fixed
 - Force login before publish: zforge publish now requires valid API key — run zforge login first

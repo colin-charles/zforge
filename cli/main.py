@@ -177,67 +177,213 @@ def hello():
 
 
 @app.command()
-def login():
-    """Authenticate with ZeroForge using your API key for verified skill publishing."""
-    import urllib.request, urllib.error, json as _json
+def login(
+    manual: bool = typer.Option(False, "--manual", help="Paste API key manually instead of browser OAuth")
+):
+    """Authenticate with ZeroForge via GitHub OAuth (browser) or manual API key."""
+    import urllib.request, urllib.error, json as _json, threading, webbrowser
+    from http.server import HTTPServer, BaseHTTPRequestHandler
     from pathlib import Path
 
     _SUPABASE_URL  = _PUBLIC_SUPABASE_URL
     _SUPABASE_ANON = _PUBLIC_SUPABASE_ANON
+    _PORT          = 7391
+    _CALLBACK_URL  = f"http://localhost:{_PORT}/callback"
+
+    # ── MANUAL / FALLBACK MODE ───────────────────────────────────────────────
+    if manual:
+        if HAS_RICH:
+            console.print()
+            console.print(Panel(
+                "Get your API key from https://zero-forge.org/profile/edit/\n"
+                "Sign in with GitHub then scroll to CLI ACCESS KEY",
+                title="[bold cyan]// ZEROFORGE LOGIN (MANUAL)[/bold cyan]",
+                border_style="cyan",
+                padding=(1, 2)
+            ))
+        else:
+            print("\n// ZEROFORGE LOGIN (MANUAL)")
+            print("Get your API key from: https://zero-forge.org/profile/edit/")
+
+        api_key = typer.prompt("Paste your API key", hide_input=True).strip()
+        if not api_key:
+            typer.echo("\u274c No API key provided.")
+            raise typer.Exit(1)
+
+        if HAS_RICH:
+            console.print("  [dim]Verifying key...[/dim]")
+        else:
+            print("  Verifying key...")
+
+        try:
+            req = urllib.request.Request(
+                f"{_SUPABASE_URL}/rest/v1/profiles_public?api_key=eq.{api_key}&select=handle,api_key",
+                headers={"apikey": _SUPABASE_ANON, "Authorization": f"Bearer {_SUPABASE_ANON}"}
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = _json.loads(resp.read())
+        except Exception as e:
+            typer.echo(f"\u274c Could not verify key: {e}")
+            raise typer.Exit(1)
+
+        if not data:
+            typer.echo("\u274c Invalid API key.")
+            raise typer.Exit(1)
+
+        handle = data[0].get("handle", "unknown")
+        _save_zforge_config(api_key, handle)
+        _print_zforge_login_success(handle)
+        return
+
+    # ── BROWSER OAUTH FLOW ───────────────────────────────────────────────────
+    done   = threading.Event()
+    result = {}
+
+    CALLBACK_HTML = """<!DOCTYPE html>
+<html>
+<head><meta charset=utf-8><title>ZeroForge Login</title>
+<style>
+  body{background:#0a0a0a;color:#00ff88;font-family:monospace;display:flex;
+       align-items:center;justify-content:center;height:100vh;margin:0;}
+  .box{border:1px solid #00ff88;padding:40px;text-align:center;max-width:420px;}
+  h1{font-size:1.2em;margin-bottom:16px;} p{color:#aaa;font-size:.9em;}
+  a{color:#00ff88;}
+</style></head>
+<body><div class=box>
+  <h1 id=msg>// AUTHENTICATING...</h1>
+  <p id=sub>Please wait...</p>
+</div>
+<script>
+  const hash = window.location.hash.substring(1);
+  const params = new URLSearchParams(hash);
+  const token = params.get('access_token');
+  if (token) {
+    fetch('/token', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({access_token: token})
+    }).then(r => r.json()).then(data => {
+      if (data.handle) {
+        document.getElementById('msg').textContent = '\u2705 Authenticated as @' + data.handle;
+        document.getElementById('sub').textContent = 'You can close this tab and return to your terminal.';
+      } else {
+        document.getElementById('msg').textContent = '\u274c Authentication failed.';
+        document.getElementById('sub').textContent = 'Try: zforge login --manual';
+      }
+    }).catch(() => {
+      document.getElementById('msg').textContent = '\u274c Error communicating with CLI.';
+    });
+  } else {
+    document.getElementById('msg').textContent = '\u274c No token received.';
+    document.getElementById('sub').textContent = 'Try: zforge login --manual';
+  }
+</script></body></html>"""
+
+    class _Handler(BaseHTTPRequestHandler):
+        def log_message(self, format, *args): pass
+
+        def do_GET(self):
+            if self.path.startswith("/callback"):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html")
+                self.end_headers()
+                self.wfile.write(CALLBACK_HTML.encode())
+            else:
+                self.send_response(404)
+                self.end_headers()
+
+        def do_POST(self):
+            if self.path == "/token":
+                length = int(self.headers.get("Content-Length", 0))
+                body   = _json.loads(self.rfile.read(length))
+                token  = body.get("access_token", "")
+
+                handle  = ""
+                api_key = ""
+                try:
+                    req = urllib.request.Request(
+                        f"{_SUPABASE_URL}/rest/v1/profiles?select=handle,api_key&limit=1",
+                        headers={
+                            "apikey":        _SUPABASE_ANON,
+                            "Authorization": f"Bearer {token}",
+                        }
+                    )
+                    with urllib.request.urlopen(req, timeout=10) as resp:
+                        data = _json.loads(resp.read())
+                    if data:
+                        handle  = data[0].get("handle", "")
+                        api_key = data[0].get("api_key", "")
+                except Exception:
+                    pass
+
+                result["handle"]  = handle
+                result["api_key"] = api_key
+
+                resp_body = _json.dumps({"handle": handle}).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Content-Length", str(len(resp_body)))
+                self.end_headers()
+                self.wfile.write(resp_body)
+                done.set()
+            else:
+                self.send_response(404)
+                self.end_headers()
+
+    # Start local server
+    try:
+        server = HTTPServer(("localhost", _PORT), _Handler)
+    except OSError:
+        if HAS_RICH:
+            console.print(f"  [yellow]Port {_PORT} in use \u2014 use: zforge login --manual[/yellow]")
+        else:
+            print(f"  Port {_PORT} in use. Try: zforge login --manual")
+        raise typer.Exit(1)
+
+    server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+    server_thread.start()
+
+    oauth_url = (
+        f"{_SUPABASE_URL}/auth/v1/authorize"
+        f"?provider=github"
+        f"&redirect_to={_CALLBACK_URL}"
+    )
 
     if HAS_RICH:
         console.print()
         console.print(Panel(
-            "Get your API key from [underline]https://zero-forge.org/profile/edit/[/underline]\n"
-            "Sign in with GitHub → scroll to [bold cyan]> CLI ACCESS KEY[/bold cyan]",
+            f"Opening browser for GitHub authentication...\n"
+            f"If browser doesn't open, visit:\n{oauth_url}",
             title="[bold cyan]// ZEROFORGE LOGIN[/bold cyan]",
             border_style="cyan",
             padding=(1, 2)
         ))
+        console.print("  [dim]Waiting for GitHub authentication (timeout: 2 min)...[/dim]")
     else:
         print("\n// ZEROFORGE LOGIN")
-        print("Get your API key from: https://zero-forge.org/profile/edit/")
-        print("Sign in with GitHub → scroll to > CLI ACCESS KEY")
+        print(f"Opening browser... If it doesn't open:\n{oauth_url}")
+        print("  Waiting for GitHub authentication...")
 
-    api_key = typer.prompt("Paste your API key", hide_input=True).strip()
+    webbrowser.open(oauth_url)
+    done.wait(timeout=120)
+    server.shutdown()
 
-    if not api_key:
-        typer.echo("❌ No API key provided.")
-        raise typer.Exit(1)
-
-    # Validate key against Supabase
-    if HAS_RICH:
-        console.print("  [dim]Verifying key...[/dim]")
-    else:
-        print("  Verifying key...")
-
-    try:
-        req = urllib.request.Request(
-            f"{_SUPABASE_URL}/rest/v1/profiles?api_key=eq.{api_key}&select=handle,github_user,bio",
-            headers={
-                "apikey": _SUPABASE_ANON,
-                "Authorization": f"Bearer {_SUPABASE_ANON}",
-            }
-        )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = _json.loads(resp.read())
-    except Exception as e:
-        typer.echo(f"❌ Could not verify key: {e}")
-        raise typer.Exit(1)
-
-    if not data:
+    if not result.get("handle") or not result.get("api_key"):
         if HAS_RICH:
-            console.print("  [bold red]❌ Invalid API key — not found in ZeroForge.[/bold red]")
-            console.print("  Get your key at [underline]https://zero-forge.org/profile/edit/[/underline]")
+            console.print("  [bold red]\u274c Authentication timed out or API key unavailable.[/bold red]")
+            console.print("  Try [bold cyan]zforge login --manual[/bold cyan] instead.")
         else:
-            print("  ❌ Invalid API key — not found in ZeroForge.")
-            print("  Get your key at https://zero-forge.org/profile/edit/")
+            print("  \u274c Authentication timed out. Try: zforge login --manual")
         raise typer.Exit(1)
 
-    profile = data[0]
-    handle = profile.get("handle", "unknown")
+    _save_zforge_config(result["api_key"], result["handle"])
+    _print_zforge_login_success(result["handle"])
 
-    # Save to ~/.zforge/config
+
+def _save_zforge_config(api_key: str, handle: str):
+    import json as _json
+    from pathlib import Path
     config_dir  = Path.home() / ".zforge"
     config_dir.mkdir(exist_ok=True)
     config_path = config_dir / "config.json"
@@ -250,21 +396,27 @@ def login():
     config["api_key"] = api_key
     config["handle"]  = handle
     config_path.write_text(_json.dumps(config, indent=2))
-    config_path.chmod(0o600)  # owner read/write only
+    config_path.chmod(0o600)
 
+
+def _print_zforge_login_success(handle: str):
+    from pathlib import Path
+    config_path = Path.home() / ".zforge" / "config.json"
     if HAS_RICH:
         console.print(Panel(
-            f"[bold green]✅ Authenticated as @{handle}[/bold green]\n"
-            f"  Key saved to [dim]{config_path}[/dim]\n"
+            f"[bold green]\u2705 Authenticated as @{handle}[/bold green]\n"
+            f"  Key saved to {config_path}\n"
             "  Skills you publish will now be attributed to your GitHub account.",
             title="[bold green]// LOGIN SUCCESS[/bold green]",
             border_style="green",
             padding=(1, 2)
         ))
     else:
-        print(f"\n✅ Authenticated as @{handle}")
+        print(f"\n\u2705 Authenticated as @{handle}")
         print(f"  Key saved to {config_path}")
         print("  Skills you publish will now be attributed to your GitHub account.")
+
+
 
 
 @app.command()
