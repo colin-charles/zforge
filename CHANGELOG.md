@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.51] - 2026-03-04
+### Fixed
+- Fix: TypeError in APOL cert issuance — cycles field is int not list; now handles gracefully
+
+
 ## [2.1.50] - 2026-03-04
 ### Fixed
 - Fix: send SKILL.md content to server for server-side APOL scoring; remove client-side cert/status claims

@@ -380,7 +380,8 @@ def _issue_apol_cert(skill_dir: Path, skill_name: str) -> dict | None:
         return None
 
     # Build judge_scores string from cycles
-    cycles_data = meta.get("cycles", [])
+    _raw_cycles = meta.get("cycles", [])
+    cycles_data = _raw_cycles if isinstance(_raw_cycles, list) else []
     if cycles_data:
         judge_lines = []
         for c in cycles_data:
