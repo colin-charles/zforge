@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.48] - 2026-03-04
+### Fixed
+- Security: server-side APOL certification (client can no longer fake cert status), fix duplicate detection bug, remove litellm from core deps, simplify install.sh to pip install
+
+
 ## [2.1.47] - 2026-03-04
 ### Fixed
 - Fix APOL fallback: structural pass no longer auto-certifies; hardcode Supabase URL so pip users can reach edge functions

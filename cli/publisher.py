@@ -70,7 +70,7 @@ except ImportError:
 # Creators don't need to configure env vars to publish — these are fallbacks.
 _PUBLIC_SUPABASE_URL  = "https://turwttpspnqmhszjwjgs.supabase.co"
 _PUBLIC_SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1cnd0dHBzcG5xbWhzemp3amdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMDM3NzAsImV4cCI6MjA4Nzc3OTc3MH0.fBajcHIJZs1lYwfEJRtnHvZdjqZ2u7YGIuPnhyAg85g"
-_PUBLIC_SUPABASE_SVC  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1cnd0dHBzcG5xbWhzemp3amdzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjIwMzc3MCwiZXhwIjoyMDg3Nzc5NzcwfQ.cpQOd6Ym7FojqeGXTKvIT4jR62lScyv_6tNgRcPDJJo"  # embedded service key for storage uploads
+_PUBLIC_SUPABASE_SVC  = ""  # service key NEVER embedded in public package
 
 # ── Edge Function endpoint (routes submissions through service role — bypasses RLS)
 _SUBMIT_EDGE_URL = "https://turwttpspnqmhszjwjgs.supabase.co/functions/v1/submit-listing"
@@ -635,7 +635,7 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
         summary.add_row("GitHub", creator_handle or "(not set)")
         summary.add_row("Category", mapped_cat)
         summary.add_row("Tags", ", ".join(tags_list))
-        summary.add_row("APOL Score", str(round(apol_score, 4)) if apol_score else "(none)")
+        summary.add_row("APOL Score (local)", str(round(apol_score, 4)) if apol_score else "(server will score)")
         summary.add_row("ZIP", f"{zip_path.name} ({zip_size_kb}KB)")
         summary.add_row("Storage URL", storage_url or "(pending upload)")
         summary.add_row("Source URL", resolved_source or "(none — creator keeps code private)")
