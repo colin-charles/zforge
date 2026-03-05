@@ -219,6 +219,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.53] - 2026-03-05
+### Fixed
+- Fix UnboundLocalError in --dry-run and shadowed CATEGORY_MAP constant
+
+
 ## [2.1.52] - 2026-03-05
 ### Fixed
 - Fix: define _show_marketplace_url (was undefined, causing NameError after publish)
