@@ -57,7 +57,7 @@ FALLBACK_MODELS = [
 ]
 
 
-def _llm_call(model, messages, max_tokens=4096):
+def _llm_call(model, messages, max_tokens=4096) -> str:
     """Call litellm with fallback chain on rate-limit or error."""
     models_to_try = [model] + [m for m in FALLBACK_MODELS if m != model]
     last_err = None
@@ -88,7 +88,7 @@ GENERATE_SYSTEM = (
 )
 
 
-def _generate_user_prompt(name, goal_content):
+def _generate_user_prompt(name, goal_content) -> str:
     return (
         "Using the specification below, write a complete SKILL.md for the '" + name + "' skill.\n\n"
         "RULES:\n"
@@ -118,7 +118,7 @@ def _generate_user_prompt(name, goal_content):
     )
 
 
-def generate_candidate(name, goal_content, model, attempt):
+def generate_candidate(name, goal_content, model, attempt) -> str:
     """Generate one SKILL.md candidate using LLM."""
     print(f"  Generating candidate {attempt}...", flush=True)
     messages = [
@@ -147,7 +147,7 @@ JUDGE_SYSTEM = (
 )
 
 
-def _judge_user_prompt(skill_md):
+def _judge_user_prompt(skill_md) -> str:
     return (
         "Score this SKILL.md using the APOL rubric.\n\n"
         "KPI DEFINITIONS:\n"
@@ -170,7 +170,7 @@ def _judge_user_prompt(skill_md):
     )
 
 
-def score_candidate(skill_md, model):
+def score_candidate(skill_md, model) -> dict:
     """Score a SKILL.md with the APOL rubric via LLM judge."""
     messages = [
         {"role": "system", "content": JUDGE_SYSTEM},
@@ -203,7 +203,7 @@ def score_candidate(skill_md, model):
 
 # ── Experiment directory management ───────────────────────────────────────
 
-def _next_experiment_dir(experiments_base, name):
+def _next_experiment_dir(experiments_base, name) -> Path:
     """Return next numbered experiment dir: 001_name, 002_name, ..."""
     existing = sorted(experiments_base.glob("[0-9][0-9][0-9]_*"))
     n = len(existing) + 1
@@ -213,7 +213,7 @@ def _next_experiment_dir(experiments_base, name):
 
 # ── Main ──────────────────────────────────────────────────────────────────
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="ZeroForge APOL experiment pipeline")
     parser.add_argument("--goal",   default="GOAL.md")
     parser.add_argument("--name",   required=True)

@@ -49,7 +49,7 @@ def _check_for_update() -> bool:
             return False  # checked recently, skip
         # NOTE: touch cache AFTER version check to avoid locking out on stale responses
 
-        def _ver(v): return tuple(int(x) for x in v.split("."))
+        def _ver(v) -> tuple: return tuple(int(x) for x in v.split("."))
 
         latest = None
 
@@ -137,7 +137,7 @@ ASCII_ART = r"""
 
 
 @app.command()
-def hello():
+def hello() -> None:
     """New here? Start with this — shows what to do next."""
     if HAS_RICH:
         console.print()
@@ -178,7 +178,7 @@ def hello():
 def login(
     manual: bool = typer.Option(False, "--manual", help="Paste API key manually instead of browser OAuth"),
     token: str  = typer.Option("",    "--token", help="Provide API key directly (headless/CI use)"),
-):
+) -> None:
     """Authenticate with ZeroForge via GitHub OAuth (browser), manual API key, or --token flag (headless/CI)."""
     import urllib.request, urllib.error, json as _json, threading, webbrowser
     from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -296,9 +296,9 @@ h1{font-size:1.2em;margin-bottom:16px;}p{color:#aaa;font-size:.9em;}
 </div></body></html>"""
 
     class _Handler(BaseHTTPRequestHandler):
-        def log_message(self, format, *args): pass
+        def log_message(self, fmt, *args) -> None: pass
 
-        def do_GET(self):
+        def do_GET(self) -> None:
             parsed = urllib.parse.urlparse(self.path)
             params = urllib.parse.parse_qs(parsed.query)
 
@@ -421,12 +421,12 @@ h1{font-size:1.2em;margin-bottom:16px;}p{color:#aaa;font-size:.9em;}
     _save_zforge_config(result["api_key"], result["handle"])
 
 
-def _save_zforge_config(api_key: str, handle: str):
+def _save_zforge_config(api_key: str, handle: str) -> None:
     """Thin wrapper around cli._config.save_credentials()."""
     save_credentials(api_key, handle)
 
 
-def _print_zforge_login_success(handle: str):
+def _print_zforge_login_success(handle: str) -> None:
     config_path = CONFIG_PATH
     if HAS_RICH:
         console.print(Panel(
@@ -446,7 +446,7 @@ def _print_zforge_login_success(handle: str):
 
 
 @app.command()
-def whoami():
+def whoami() -> None:
     """Show who you are logged in as on ZeroForge."""
     config = load_credentials()
     if not config:
@@ -476,7 +476,7 @@ def whoami():
 
 
 @app.command()
-def info():
+def info() -> None:
     """Show ZeroForge CLI info, version, and available commands."""
     if HAS_RICH:
         commands_table = Table(box=box.SIMPLE, show_header=True, header_style="bold cyan")
@@ -514,7 +514,7 @@ def info():
 def new(
     skill_name: str = typer.Argument(..., help="Name of the new skill to scaffold"),
     output_dir: Optional[str] = typer.Option(None, "--output-dir", "-o", help="Parent directory (default: cwd)"),
-):
+) -> None:
     """Scaffold a new skill directory with all boilerplate files."""
     from cli.scaffold import scaffold_skill, print_success
     out = Path(output_dir) if output_dir else None
@@ -528,7 +528,7 @@ def dev(
     cycles: int = typer.Option(3, "--cycles", "-c", help="Number of APOL cycles"),
     model: str = typer.Option("openrouter/anthropic/claude-sonnet-4-5", "--model", "-m", help="LLM model to use"),
     skill: Optional[str] = typer.Option(None, "--skill", "-s", help="Skill directory (default: cwd)"),
-):
+) -> None:
     """Run the APOL experiment pipeline to generate and refine SKILL.md."""
     from cli.runner import run_dev
     skill_dir = Path(skill).resolve() if skill else Path.cwd()
@@ -539,7 +539,7 @@ def dev(
 @app.command()
 def validate(
     skill: str = typer.Argument(".", help="Skill name or path to validate (default: cwd)"),
-):
+) -> None:
     """Validate a skill directory against ZeroForge quality standards."""
     from cli.validator import run_validate
     # Accept skill name (looks up in cwd) or full path
@@ -556,7 +556,7 @@ def validate(
 @app.command()
 def test(
     skill: str = typer.Option(".", "--skill", "-s", help="Skill directory to test (default: cwd)"),
-):
+) -> None:
     """Run SkillTest.md test suite against a skill directory."""
     from cli.tester import run_test
     exit_code = run_test(skill_dir=Path(skill).resolve())
@@ -567,7 +567,7 @@ def test(
 def publish(
     skill_dir: Path = typer.Argument(Path("."), help="Skill directory to publish (default: cwd)"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Validate and package only, do not submit to marketplace"),
-):
+) -> None:
     """Validate, package and publish skill to zero-forge.org marketplace."""
     from cli.publisher import publish_skill
     publish_skill(skill_dir, dry_run=dry_run)
@@ -586,7 +586,7 @@ def build(
     output_dir: Optional[str] = typer.Option(None, "--output-dir", "-o", help="Parent directory (default: cwd)"),
     publish: bool = typer.Option(False, "--publish", help="Auto-publish after build"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Package only, don't submit"),
-):
+) -> None:
     """🚀 Full automated pipeline: scaffold → GOAL.md → APOL → validate → test → publish."""
     from cli.builder import build as run_build
     tags_list = [t.strip() for t in tags.split(",") if t.strip()]
@@ -611,7 +611,7 @@ def list_skills(
     category: Optional[str] = typer.Option(None, "--category", "-c", help="Filter by category"),
     tag: Optional[str] = typer.Option(None, "--tag", "-t", help="Filter by tag"),
     limit: int = typer.Option(20, "--limit", "-n", help="Max results to show"),
-):
+) -> None:
     """Browse approved skills on the ZeroForge marketplace."""
     import json, urllib.request, urllib.parse, os
     supabase_url = (os.environ.get("SUPABASE_URL") or _PUBLIC_SUPABASE_URL).rstrip("/")
@@ -672,7 +672,7 @@ def list_skills(
 def search(
     query: str = typer.Argument(..., help="Search term — matches title, description, or tags"),
     limit: int = typer.Option(10, "--limit", "-n", help="Max results"),
-):
+) -> None:
     """Search the ZeroForge marketplace by keyword."""
     import json, urllib.request, urllib.parse, os
     supabase_url = (os.environ.get("SUPABASE_URL") or _PUBLIC_SUPABASE_URL).rstrip("/")
@@ -719,7 +719,7 @@ def install(
     slug: str = typer.Argument(..., help="Skill slug from the marketplace (e.g. system-health-report)"),
     output_dir: Optional[str] = typer.Option(None, "--output-dir", "-o", help="Parent directory (default: ./skills/)"),
     skip_install_sh: bool = typer.Option(False, "--skip-install", help="Skip running install.sh after clone"),
-):
+) -> None:
     """Download and install a skill from the ZeroForge marketplace."""
     import json, urllib.request, os, subprocess
     supabase_url = (os.environ.get("SUPABASE_URL") or _PUBLIC_SUPABASE_URL).rstrip("/")
@@ -728,7 +728,7 @@ def install(
     # 1. Fetch listing — try exact title, then fuzzy slug-to-title match
     import urllib.parse as _up
 
-    def _fetch(query_param: str):
+    def _fetch(query_param: str) -> list:
         req = urllib.request.Request(
             f"{supabase_url}/rest/v1/listings?{query_param}&status=eq.approved&select=*&limit=1",
             headers={"apikey": anon_key, "Authorization": f"Bearer {anon_key}"}
@@ -878,7 +878,7 @@ def install(
 
 
 
-def main():
+def main() -> None:
     app()
 
 
@@ -887,7 +887,7 @@ if __name__ == "__main__":
 
 
 @app.command()
-def setup():
+def setup() -> None:
     """First-time setup wizard — configure your API key in plain English."""
     import os
 
@@ -983,7 +983,7 @@ def run_skill(
     skill_args: Optional[str] = typer.Option(None, "--args", help="Arguments to pass to the skill"),
     output_dir: Optional[str] = typer.Option(None, "--output-dir", "-o", help="Where to install"),
     keep: bool = typer.Option(False, "--keep", help="Keep installed files after running"),
-):
+) -> None:
     """Install a skill AND run it in one command. No terminal knowledge needed."""
     import subprocess, shutil, json, urllib.request, re as _re
     import os, tempfile, zipfile as _zf, urllib.parse as _up
@@ -1003,7 +1003,7 @@ def run_skill(
         console.print(f"[bold magenta]zforge run[/bold magenta] -> [bold yellow]{slug}[/bold yellow]")
         console.print()
 
-    def fetch_listing(param):
+    def fetch_listing(param) -> list:
         req = urllib.request.Request(
             f"{supabase_url}/rest/v1/listings?{param}&status=eq.approved&select=*&limit=1",
             headers={"apikey": anon_key, "Authorization": f"Bearer {anon_key}"}

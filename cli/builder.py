@@ -19,8 +19,8 @@ try:
 except ImportError:
     HAS_RICH = False
     class _FallbackConsole:
-        def print(self, *a, **k): print(*a)
-        def rule(self, t=""): print(f"\n{'='*60} {t} {'='*60}")
+        def print(self, *a, **k) -> None: print(*a)
+        def rule(self, t="") -> None: print(f"\n{'='*60} {t} {'='*60}")
     console = _FallbackConsole()
 
 from cli._console import _print, _rule  # shared console helpers
@@ -236,7 +236,7 @@ Be specific. Use real commands, real output, real file paths. No [PLACEHOLDER] t
 
 
 def build_skill_json(skill_dir: Path, name: str, author: str, tags: list,
-                     category: str, description: str, price: str):
+                     category: str, description: str, price: str) -> None:
     """Write a populated skill.json from CLI arguments."""
     slug = name.replace("_", "-").lower()
     short_desc = description[:117] + "..." if len(description) > 120 else description
@@ -747,7 +747,7 @@ def build(
     output_dir: Path = None,
     publish: bool = False,
     dry_run: bool = False,
-):
+) -> None:
     """Run the full automated skill build pipeline."""
     skills_base = output_dir or Path.cwd()
     skill_dir = skills_base / skill_name

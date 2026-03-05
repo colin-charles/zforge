@@ -80,7 +80,7 @@ def _verify_api_key(api_key: str) -> dict:
         return {}
 
 
-def load_env():
+def load_env() -> Optional[Path]:
     """Load env from secrets.env (Agent Zero secrets store) or .env fallback."""
     candidates = [
         Path('/a0/usr/secrets.env'),          # Agent Zero secrets store (preferred)
@@ -131,13 +131,13 @@ if HAS_PYDANTIC:
             description_for_agent: str
 
             @validator('short')
-            def check_short(cls, v):
+            def check_short(cls, v) -> str:
                 if len(v) > 120:
                     raise ValueError(f'short description must be <=120 chars (got {len(v)})')
                 return v
 
             @validator('description_for_agent')
-            def check_agent_desc(cls, v):
+            def check_agent_desc(cls, v) -> str:
                 if len(v.split()) < 10:
                     raise ValueError(f'description_for_agent must be >=10 words (got {len(v.split())})')
                 return v
@@ -153,11 +153,11 @@ if HAS_PYDANTIC:
 
 else:
     class SkillManifest:  # type: ignore
-        def __init__(self, data: dict):
+        def __init__(self, data: dict) -> None:
             self._data = data
 
         @classmethod
-        def model_validate(cls, data: dict):
+        def model_validate(cls, data: dict) -> 'SkillManifest':
             inst = cls(data)
             meta = data.get('metadata', {})
             for field in ('name', 'slug', 'version', 'author', 'license', 'category', 'tags'):
@@ -172,7 +172,7 @@ else:
                 raise ValueError('description_for_agent must be >=10 words')
             return inst
 
-        def __getattr__(self, name):
+        def __getattr__(self, name) -> Any:
             return self._data.get(name, {})
 
 
@@ -271,7 +271,7 @@ def upload_to_storage(zip_path: Path, skill_name: str, service_key: str, supabas
 
 
 
-def upload_via_edge_function(zip_path, skill_name):
+def upload_via_edge_function(zip_path, skill_name) -> Optional[str]:
     """
     Upload zip to Supabase Storage via Edge Function.
     No SUPABASE_SERVICE_KEY required — edge function holds service role.
@@ -394,7 +394,7 @@ def _submit_to_edge_function(payload: dict, api_key: str = '') -> dict:
 
 
 def _show_publish_result(listing_id: str, apol_certified: bool, storage_url: str,
-                        resolved_source: str, record_name: str):
+                        resolved_source: str, record_name: str) -> None:
     """Display the post-publish result panel."""
     if HAS_RICH:
         _status = ("[green]approved — live on marketplace[/green]"
@@ -453,7 +453,7 @@ def _validate_credentials() -> tuple:
     return _api_key, _verified_handle
 
 
-def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str = ""):
+def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str = "") -> None:
     skill_dir = Path(skill_dir_arg).resolve()
     skill_name = skill_dir.name
 

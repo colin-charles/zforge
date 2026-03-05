@@ -228,7 +228,7 @@ def run_tests(skill_dir: Path) -> int:
     return 0 if failures == 0 else 1
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="ZeroForge skill test runner")
     parser.add_argument("--skill", required=True, help="Path to skill directory")
     args = parser.parse_args()

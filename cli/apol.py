@@ -124,7 +124,7 @@ def _call_refine(skill_md: str, feedback: dict, summary: str) -> str:
     raise RuntimeError(f"apol-refine [{resp.status_code}]: {resp.text[:300]}")
 
 
-def _show_score(score: float, kpis: dict, summary: str, cycle: int = 0):
+def _show_score(score: float, kpis: dict, summary: str, cycle: int = 0) -> None:
     """Pretty-print the APOL judge result."""
     label = "CERTIFIED ✅" if score >= CERTIFIED_THRESHOLD else "Below threshold ❌"
     cycle_str = f"  (cycle {cycle})" if cycle > 0 else ""
@@ -160,7 +160,7 @@ def _show_score(score: float, kpis: dict, summary: str, cycle: int = 0):
         print(f"  Summary: {summary}")
 
 
-def _show_diff(original: str, improved: str):
+def _show_diff(original: str, improved: str) -> None:
     """Show a unified diff of the two SKILL.md versions."""
     orig_lines = original.splitlines(keepends=True)
     impr_lines = improved.splitlines(keepends=True)

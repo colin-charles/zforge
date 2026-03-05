@@ -6,7 +6,7 @@ from pathlib import Path
 SCRIPTS_DIR = Path(__file__).parent / "scripts"
 
 
-def run_test(skill_dir=None):
+def run_test(skill_dir=None) -> int:
     """Run test_runner.py with live streaming output."""
     skill_dir = (Path(skill_dir) if skill_dir else Path.cwd()).resolve()
     script = SCRIPTS_DIR / "test_runner.py"
