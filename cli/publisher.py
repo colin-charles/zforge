@@ -4,7 +4,7 @@ from __future__ import annotations
 
 # Internal validator — CERTIFIED badge is earned, not self-reported
 from cli.validator import run_validate as _run_validator
-from cli.apol import apol_certify, ApolResult
+from cli.apol import apol_certify
 
 import json
 import os
@@ -83,7 +83,6 @@ try:
     from rich.table import Table
     from rich import box
     from rich.rule import Rule
-    from rich.syntax import Syntax
     console = Console()
     HAS_RICH = True
 except ImportError:

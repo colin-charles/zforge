@@ -1,6 +1,5 @@
 """zforge new — scaffold a new skill directory."""
 from pathlib import Path
-import shutil
 import sys
 
 try:

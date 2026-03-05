@@ -141,7 +141,6 @@ ASCII_ART = r"""
 def hello():
     """New here? Start with this — shows what to do next."""
     if HAS_RICH:
-        from rich.padding import Padding
         console.print()
         console.print(Panel(
             f"[bold cyan]{ASCII_ART}[/bold cyan]",
