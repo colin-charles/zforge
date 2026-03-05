@@ -1,5 +1,5 @@
-import re
 """zforge -- ZeroForge Skill Development CLI."""
+import re
 import sys
 
 import urllib.request
@@ -37,7 +37,11 @@ except Exception:
 
 def _check_for_update() -> bool:
     """Check PyPI for a newer version — synchronous. Returns True if upgraded."""
-    import subprocess, time, pathlib, os, re as _re
+    import subprocess
+    import time
+    import pathlib
+    import os
+    import re as _re
     # Skip upgrade check in subprocesses spawned by zforge build
     if os.environ.get('ZFORGE_SUBPROCESS'):
         return False
@@ -180,7 +184,11 @@ def login(
     token: str  = typer.Option("",    "--token", help="Provide API key directly (headless/CI use)"),
 ) -> None:
     """Authenticate with ZeroForge via GitHub OAuth (browser), manual API key, or --token flag (headless/CI)."""
-    import urllib.request, urllib.error, json as _json, threading, webbrowser
+    import urllib.request
+    import urllib.error
+    import json as _json
+    import threading
+    import webbrowser
     from http.server import HTTPServer, BaseHTTPRequestHandler
 
     _SUPABASE_URL  = _PUBLIC_SUPABASE_URL
@@ -195,7 +203,9 @@ def login(
             console.print("  [dim]Verifying token...[/dim]")
         else:
             print("  Verifying token...")
-        import urllib.request, urllib.error, json as _json
+        import urllib.request
+        import urllib.error
+        import json as _json
         try:
             req = urllib.request.Request(
                 f"{_PUBLIC_SUPABASE_URL}/rest/v1/profiles_public?api_key=eq.{token}&select=handle,api_key",
@@ -261,7 +271,10 @@ def login(
 
     # ── BROWSER OAUTH FLOW (PKCE) ────────────────────────────────────────────
     # Token never appears in browser URL or history
-    import hashlib, base64, secrets as _secrets, urllib.parse
+    import hashlib
+    import base64
+    import secrets as _secrets
+    import urllib.parse
 
     done   = threading.Event()
     result = {}
@@ -613,7 +626,10 @@ def list_skills(
     limit: int = typer.Option(20, "--limit", "-n", help="Max results to show"),
 ) -> None:
     """Browse approved skills on the ZeroForge marketplace."""
-    import json, urllib.request, urllib.parse, os
+    import json
+    import urllib.request
+    import urllib.parse
+    import os
     supabase_url = (os.environ.get("SUPABASE_URL") or _PUBLIC_SUPABASE_URL).rstrip("/")
     anon_key = os.environ.get("SUPABASE_ANON_KEY") or _PUBLIC_SUPABASE_ANON
 
@@ -635,7 +651,7 @@ def list_skills(
 
     # Filter by tag client-side
     if tag:
-        listings = [l for l in listings if tag.lower() in [t.lower() for t in (l.get("tags") or [])]]
+        listings = [item for item in listings if tag.lower() in [t.lower() for t in (item.get("tags") or [])]]
 
     if HAS_RICH:
         table = Table(title=f"ZeroForge Marketplace ({len(listings)} skills)", box=box.ROUNDED, header_style="bold cyan")
@@ -645,14 +661,14 @@ def list_skills(
         table.add_column("APOL", justify="right", style="green")
         table.add_column("Price", justify="right", style="magenta")
         table.add_column("Tags", style="dim")
-        for l in listings:
-            score = "APOL✓" if l.get('apol_certified') else "—"
-            tags_str = ", ".join((l.get("tags") or [])[:3])
-            price = l.get("price") or "free"
+        for item in listings:
+            score = "APOL✓" if item.get('apol_certified') else "—"
+            tags_str = ", ".join((item.get("tags") or [])[:3])
+            price = item.get("price") or "free"
             table.add_row(
-                l.get("id", "-")[:8] + "...",
-                l.get("title", "-"),
-                l.get("creator_name", "-"),
+                item.get("id", "-")[:8] + "...",
+                item.get("title", "-"),
+                item.get("creator_name", "-"),
                 score,
                 price,
                 tags_str
@@ -662,9 +678,9 @@ def list_skills(
     else:
         print(f"{'Slug':<30} {'Author':<20} {'APOL':<8} {'Price':<8}")
         print("-" * 70)
-        for l in listings:
-            score = "APOL✓" if l.get('apol_certified') else "—"
-            print(f"{l.get('title',''):<30} {l.get('creator_name',''):<20} {score:<8} {l.get('price','free'):<8}")
+        for item in listings:
+            score = "APOL✓" if item.get('apol_certified') else "—"
+            print(f"{item.get('title',''):<30} {item.get('creator_name',''):<20} {score:<8} {item.get('price','free'):<8}")
         print("\nInstall: zforge install <slug>")
 
 
@@ -674,7 +690,10 @@ def search(
     limit: int = typer.Option(10, "--limit", "-n", help="Max results"),
 ) -> None:
     """Search the ZeroForge marketplace by keyword."""
-    import json, urllib.request, urllib.parse, os
+    import json
+    import urllib.request
+    import urllib.parse
+    import os
     supabase_url = (os.environ.get("SUPABASE_URL") or _PUBLIC_SUPABASE_URL).rstrip("/")
     anon_key = os.environ.get("SUPABASE_ANON_KEY") or _PUBLIC_SUPABASE_ANON
 
@@ -701,16 +720,16 @@ def search(
 
     if HAS_RICH:
         console.print(f"\n[bold cyan]Search results for '{query}'[/bold cyan] — {len(results)} found\n")
-        for l in results:
-            score = "APOL✓" if l.get('apol_certified') else "—"
-            tags_str = ", ".join((l.get("tags") or [])[:4])
-            console.print(f"  [bold yellow]{l.get('title')}[/bold yellow]  [dim]by {l.get('creator_name')}[/dim]  APOL: [green]{score}[/green]  [{tags_str}]")
-            console.print(f"  [white]{l.get('description', '')[:100]}[/white]")
-            console.print(f"  [dim]→ zforge install {l.get('title')}[/dim]")
+        for item in results:
+            score = "APOL✓" if item.get('apol_certified') else "—"
+            tags_str = ", ".join((item.get("tags") or [])[:4])
+            console.print(f"  [bold yellow]{item.get('title')}[/bold yellow]  [dim]by {item.get('creator_name')}[/dim]  APOL: [green]{score}[/green]  [{tags_str}]")
+            console.print(f"  [white]{item.get('description', '')[:100]}[/white]")
+            console.print(f"  [dim]→ zforge install {item.get('title')}[/dim]")
     else:
-        for l in results:
-            print(f"  {l.get('title')} — {l.get('description', '')[:80]}")
-            print(f"  Install: zforge install {l.get('title')}")
+        for item in results:
+            print(f"  {item.get('title')} — {item.get('description', '')[:80]}")
+            print(f"  Install: zforge install {item.get('title')}")
 
 
 @app.command()
@@ -720,7 +739,10 @@ def install(
     skip_install_sh: bool = typer.Option(False, "--skip-install", help="Skip running install.sh after clone"),
 ) -> None:
     """Download and install a skill from the ZeroForge marketplace."""
-    import json, urllib.request, os, subprocess
+    import json
+    import urllib.request
+    import os
+    import subprocess
     supabase_url = (os.environ.get("SUPABASE_URL") or _PUBLIC_SUPABASE_URL).rstrip("/")
     anon_key = os.environ.get("SUPABASE_ANON_KEY") or _PUBLIC_SUPABASE_ANON
 
@@ -753,7 +775,6 @@ def install(
 
     listing = rows[0]
     title = listing.get("title", slug)
-    repo_url = (listing.get("url") or "").strip()
     author = listing.get("creator_name", "unknown")
     score = listing.get("apol_certified")
     score_str = f"{float(score):.3f}" if score else "N/A"
@@ -787,9 +808,10 @@ def install(
 
     if storage_url and storage_url.startswith("http"):
         # ── Path A: Download zip from Supabase Storage ──────────────────────
-        import tempfile, zipfile as _zf
+        import tempfile
+        import zipfile as _zf
         if HAS_RICH:
-            console.print(f"  [dim]Downloading from ZeroForge Storage...[/dim]")
+            console.print("  [dim]Downloading from ZeroForge Storage...[/dim]")
         else:
             print("  Downloading skill zip from ZeroForge...")
         try:
@@ -822,7 +844,7 @@ def install(
             import os as _os
             _os.unlink(tmp_path)
             if HAS_RICH:
-                console.print(f"  [green]✓ Downloaded and extracted[/green]")
+                console.print("  [green]✓ Downloaded and extracted[/green]")
             else:
                 print("  Download complete.")
         except Exception as e:
@@ -833,7 +855,7 @@ def install(
         # ── Path B: Git clone from creator repo (open-source skills) ─────────
         if HAS_RICH:
             console.print(f"  [dim]Cloning source from {source_url}...[/dim]")
-            console.print(f"  [dim yellow](Tip: this skill links to its public GitHub repo)[/dim yellow]")
+            console.print("  [dim yellow](Tip: this skill links to its public GitHub repo)[/dim yellow]")
         else:
             print(f"  Cloning {source_url}...")
         result = subprocess.run(["git", "clone", source_url, str(target)])
@@ -845,7 +867,7 @@ def install(
         # ── Path C: No download URL ──────────────────────────────────────────
         listing_url = f"https://zero-forge.org/listing/?id={listing.get('id', '')}"
         if HAS_RICH:
-            console.print(f"[yellow]  No download URL available for this skill.[/yellow]")
+            console.print("[yellow]  No download URL available for this skill.[/yellow]")
             console.print(f"  Visit: [bold]{listing_url}[/bold] for manual download instructions.")
         else:
             print(f"  No download URL. Visit: {listing_url}")
@@ -984,8 +1006,15 @@ def run_skill(
     keep: bool = typer.Option(False, "--keep", help="Keep installed files after running"),
 ) -> None:
     """Install a skill AND run it in one command. No terminal knowledge needed."""
-    import subprocess, shutil, json, urllib.request, re as _re
-    import os, tempfile, zipfile as _zf, urllib.parse as _up
+    import subprocess
+    import shutil
+    import json
+    import urllib.request
+    import re as _re
+    import os
+    import tempfile
+    import zipfile as _zf
+    import urllib.parse as _up
 
     env_path = Path("/a0/usr/workdir/ZeroForge/.env")
     supabase_url = os.environ.get("SUPABASE_URL", "").rstrip("/")

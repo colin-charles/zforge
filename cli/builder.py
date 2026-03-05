@@ -117,7 +117,7 @@ def _validate_description(description: str) -> None:
 
     if vague_found:
         if HAS_RICH:
-            console.print(f"[bold red]\n🚫 VAGUE DESCRIPTION — BUILD BLOCKED[/bold red]")
+            console.print("[bold red]\n🚫 VAGUE DESCRIPTION — BUILD BLOCKED[/bold red]")
             console.print(f"  Vague terms found: {vague_found}")
             console.print("  Replace with specific nouns, actions, and output formats.")
         else:
@@ -279,7 +279,7 @@ def build_skill_json(skill_dir: Path, name: str, author: str, tags: list,
 
     with open(skill_dir / "skill.json", "w") as f:
         json.dump(manifest, f, indent=2)
-    _print(f"  [green]✓[/green] skill.json populated" if HAS_RICH else "  ✓ skill.json populated")
+    _print("  [green]✓[/green] skill.json populated" if HAS_RICH else "  ✓ skill.json populated")
 
 
 def run_step(label: str, cmd: list, cwd: Path) -> int:
@@ -479,6 +479,7 @@ def _issue_apol_cert(skill_dir: Path, skill_name: str) -> dict | None:
 _REPAIR_MAX_CYCLES   = 2
 _OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions"
 _REPAIR_MODEL        = "google/gemini-flash-1.5"  # free tier
+_REPAIR_MODELS       = [_REPAIR_MODEL]  # fallback list for repair attempts
 _PUBLIC_OR_KEY       = "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"
 
 
@@ -648,7 +649,7 @@ def _script_repair_loop(skill_dir: Path) -> bool:
 
 
 
-def _show_marketplace_url(skill_dir: "Path", supabase_url: str, anon_key: str, use_rich: bool, console) -> None:
+def _show_marketplace_url(skill_dir: "Path", use_rich: bool, console) -> None:
     """Show the marketplace URL after publishing."""
     try:
         sj = skill_dir / "skill.json"
@@ -770,7 +771,7 @@ def build(
     goal_content = generate_goal_md(skill_name, description, model)
     goal_path = skill_dir / "GOAL.md"
     goal_path.write_text(goal_content)
-    _print(f"  [green]✓[/green] GOAL.md written ({len(goal_content.split())} words)" if HAS_RICH else f"  ✓ GOAL.md written")
+    _print(f"  [green]✓[/green] GOAL.md written ({len(goal_content.split())} words)" if HAS_RICH else "  ✓ GOAL.md written")
 
     # ── STEP 3: APOL Dev Pipeline ─────────────────────────────────
     _rule("Step 3/7 — APOL Pipeline (zforge dev)")
@@ -794,7 +795,7 @@ def build(
         _print("  [red]✗ WINNER.md not found.[/red]" if HAS_RICH else "  ✗ WINNER.md not found.")
         sys.exit(1)
     shutil.copy(winner_path, skill_dir / "SKILL.md")
-    _print(f"  [green]✓[/green] WINNER.md promoted to SKILL.md" if HAS_RICH else "  ✓ WINNER.md → SKILL.md")
+    _print("  [green]✓[/green] WINNER.md promoted to SKILL.md" if HAS_RICH else "  ✓ WINNER.md → SKILL.md")
 
     category = _normalize_category(category)
 
@@ -813,7 +814,7 @@ def build(
     cert = _issue_apol_cert(skill_dir, skill_name)
     if cert and "signature" in cert:
         _update_skill_json_with_cert(skill_dir, cert)
-        _print(f"  [bold green]✓ APOL Certificate issued![/bold green]" if HAS_RICH else "  ✓ APOL Certificate issued!")
+        _print("  [bold green]✓ APOL Certificate issued![/bold green]" if HAS_RICH else "  ✓ APOL Certificate issued!")
         _print(f"  [dim]Cert ID: {cert.get('experiment_id')} | Sig: {cert.get('signature', '')[:16]}...[/dim]" if HAS_RICH else f"  Cert ID: {cert.get('experiment_id')}")
     else:
         _print("  [yellow]⚠ APOL cert not issued — skill.json quality section unchanged[/yellow]" if HAS_RICH else "  ⚠ APOL cert not issued")
@@ -858,7 +859,8 @@ def build(
         # 🔴 HARD GATE: Block publish if APOL score < CERTIFIED_THRESHOLD
         apol_score = None
         try:
-            import glob as _glob, json as _json
+            import glob as _glob
+            import json as _json
             exp_dirs_glob = sorted(_glob.glob(str(skill_dir / "experiments" / "[0-9][0-9][0-9]_*")))
             if not exp_dirs_glob:
                 # Also check r-and-d/experiments path
@@ -932,7 +934,7 @@ def build(
             _rule("Step 8 — Publish")
             import subprocess as _subp
             _subp.run(["zforge", "publish", "."], cwd=str(skill_dir))
-            _show_marketplace_url(skill_dir, supabase_url, anon_key, True, console)
+            _show_marketplace_url(skill_dir, True, console)
         else:
             console.print("[dim]Run when ready:[/dim] [cyan]zforge publish " + str(skill_dir) + "[/cyan]")
     else:
@@ -950,6 +952,6 @@ def build(
         if _publish_now in ("", "y", "yes"):
             import subprocess as _subp
             _subp.run(["zforge", "publish", "."], cwd=str(skill_dir))
-            _show_marketplace_url(skill_dir, supabase_url, anon_key, False, None)
+            _show_marketplace_url(skill_dir, False, None)
         else:
             print("  Run when ready: zforge publish " + str(skill_dir))

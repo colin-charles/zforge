@@ -7,7 +7,7 @@ import sys
 import zipfile
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 try:
     from pydantic import BaseModel, validator
@@ -250,7 +250,6 @@ def upload_to_storage(zip_path: Path, skill_name: str, service_key: str, supabas
             resp = requests.post(upload_url, headers=headers, data=f, timeout=120)
 
         if resp.status_code in (200, 201):
-            project_ref = supabase_url.split('//')[1].split('.')[0]
             public_url = f"{supabase_url}/storage/v1/object/public/skills/{storage_path}"
             _print(f"  [green]Uploaded -> {public_url}[/green]")
             return public_url
@@ -494,7 +493,8 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
             meta_raw = raw.get('metadata', {})
             desc_raw = raw.get('description', {})
             quality_raw = raw.get('quality', {})
-            class _NS: pass
+            class _NS:
+                pass
             meta = _NS()
             meta.name = meta_raw.get('name', '')
             meta.slug = meta_raw.get('slug', '')
@@ -672,7 +672,6 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
         sys.exit(1)
 
     listing_id = result.get('id', 'unknown')
-    listing_slug = result.get('slug', getattr(meta, 'slug', skill_name))
 
     # 12. Save record
     record = {

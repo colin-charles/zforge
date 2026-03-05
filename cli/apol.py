@@ -194,7 +194,7 @@ def apol_certify(skill_dir: Path) -> ApolResult:
     """
     skill_md_path = skill_dir / "SKILL.md"
     if not skill_md_path.exists():
-        _rprint(f"  [yellow]SKILL.md not found — skipping APOL scoring[/yellow]")
+        _rprint("  [yellow]SKILL.md not found — skipping APOL scoring[/yellow]")
         return ApolResult(certified=False, score=0.0, skill_md="", skipped=True)
 
     original_skill_md = skill_md_path.read_text(encoding="utf-8")

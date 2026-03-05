@@ -96,8 +96,10 @@ def run_tests(skill_dir: Path) -> int:
     has_skill_md   = check("SKILL.md exists",   (skill_dir / "SKILL.md").exists())
     has_skill_json = check("skill.json exists", (skill_dir / "skill.json").exists())
     check("README.md exists", (skill_dir / "README.md").exists(), warn_only=True)
-    if not has_skill_md:   failures += 1
-    if not has_skill_json: failures += 1
+    if not has_skill_md:
+        failures += 1
+    if not has_skill_json:
+        failures += 1
 
     # ── SKILL.md content ──────────────────────────────────────────
     print("\n  -- SKILL.md --")

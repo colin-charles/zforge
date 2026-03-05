@@ -250,5 +250,5 @@ def print_success(name: str, target: Path) -> None:
         sep = "=" * 60
         print(f"\n{sep}")
         print(f"Skill scaffolded! --> {target}")
-        print(f"Next: edit GOAL.md then run zforge dev")
+        print("Next: edit GOAL.md then run zforge dev")
         print(f"{sep}\n")
