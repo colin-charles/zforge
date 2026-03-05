@@ -32,7 +32,7 @@ except ImportError:
 
 from cli._console import HAS_RICH, console, _print, _rule
 from cli._constants import (
-    CERTIFIED_THRESHOLD, _CLI_TOKEN, _PUBLIC_SUPABASE_URL,
+    CERTIFIED_THRESHOLD, _CLI_TOKEN, _PUBLIC_SUPABASE_URL, api_headers,
 )
 
 try:
@@ -96,7 +96,7 @@ def _call_judge(skill_md: str) -> dict:
         raise RuntimeError("pip install requests")
     resp = requests.post(
         _judge_url(),
-        headers={"Content-Type": "application/json", "x-zforge-token": _CLI_TOKEN},
+        headers=api_headers(**{"Content-Type": "application/json", "x-zforge-token": _CLI_TOKEN}),
         json={"skill_md": skill_md},
         timeout=90,
     )
@@ -111,7 +111,7 @@ def _call_refine(skill_md: str, feedback: dict, summary: str) -> str:
         raise RuntimeError("pip install requests")
     resp = requests.post(
         _refine_url(),
-        headers={"Content-Type": "application/json", "x-zforge-token": _CLI_TOKEN},
+        headers=api_headers(**{"Content-Type": "application/json", "x-zforge-token": _CLI_TOKEN}),
         json={"skill_md": skill_md, "feedback": feedback, "summary": summary},
         timeout=60,
     )

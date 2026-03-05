@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.54] - 2026-03-05
+### Fixed
+- Add User-Agent tracking on all API calls and zforge report bug reporting command
+
+
 ## [2.1.53] - 2026-03-05
 ### Fixed
 - Fix UnboundLocalError in --dry-run and shadowed CATEGORY_MAP constant

@@ -37,6 +37,7 @@ from cli._constants import (
     _PUBLIC_SUPABASE_URL, _PUBLIC_SUPABASE_ANON, _PUBLIC_SUPABASE_SVC,
     _SUBMIT_EDGE_URL, _UPLOAD_EDGE_URL, _CLI_TOKEN,
     CERTIFIED_THRESHOLD, VALID_CATEGORIES, CATEGORY_MAP,
+    api_headers,
 )
 
 
@@ -50,12 +51,11 @@ from cli._constants import (
 
 def _supabase_anon_headers() -> dict:
     """Standard headers for public (anon-key) Supabase REST calls."""
-    return {
-        "apikey": _PUBLIC_SUPABASE_ANON,
-        "Authorization": "Bearer " + _PUBLIC_SUPABASE_ANON,
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-    }
+    return api_headers(
+        apikey=_PUBLIC_SUPABASE_ANON,
+        Authorization="Bearer " + _PUBLIC_SUPABASE_ANON,
+        **{"Content-Type": "application/json", "Accept": "application/json"},
+    )
 
 
 def _verify_api_key(api_key: str) -> dict:
@@ -290,7 +290,7 @@ def upload_via_edge_function(zip_path, skill_name) -> Optional[str]:
         with open(zip_path, "rb") as f:
             resp = requests.post(
                 edge_url,
-                headers={"x-zforge-token": _CLI_TOKEN},
+                headers=api_headers(**{"x-zforge-token": _CLI_TOKEN}),
                 files={"file": (zip_path.name, f, "application/zip")},
                 data={"skill_name": skill_name},
                 timeout=120,
@@ -354,11 +354,11 @@ def _submit_to_edge_function(payload: dict, api_key: str = '') -> dict:
             "ZFORGE_SUBMIT_URL not set and public fallback is missing — contact support"
         )
 
-    headers = {
-        "Content-Type": "application/json",
-            **({"X-ZForge-Key": api_key} if api_key else {}),
-        "x-zforge-token": _CLI_TOKEN,
-    }
+    headers = api_headers(
+        **{"Content-Type": "application/json"},
+        **({"X-ZForge-Key": api_key} if api_key else {}),
+        **{"x-zforge-token": _CLI_TOKEN},
+    )
 
     _print("  Connecting to ZeroForge marketplace ...")
     try:
