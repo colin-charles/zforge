@@ -558,7 +558,7 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
             apol_score      = getattr(quality, 'apol_composite_score', None) or _legacy_cert.get('composite_score')
 
     # 4. Category mapping
-    CATEGORY_MAP = {**CATEGORY_MAP,
+    category_map = {**CATEGORY_MAP,
         "dev-tools": "skill", "development": "skill", "tool": "skill",
         "tutorial": "guide", "howto": "guide",
         "scaffold": "template",
@@ -568,7 +568,7 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
     }
     # VALID_CATEGORIES imported from cli._constants (module-level)
     raw_cat = (meta.category or "").lower().strip()
-    mapped_cat = CATEGORY_MAP.get(raw_cat, raw_cat if raw_cat in VALID_CATEGORIES else "skill")
+    mapped_cat = category_map.get(raw_cat, raw_cat if raw_cat in VALID_CATEGORIES else "skill")
     tags_list = meta.tags if isinstance(meta.tags, list) else [str(meta.tags)]
 
     # 5. Resolve GitHub handle
