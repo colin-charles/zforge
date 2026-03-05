@@ -1,202 +1,97 @@
-# zforge
+# ⚒️ zforge — The CLI for AgentZero Skills
 
-> The official CLI for building, validating, and publishing AgentZero skills to the [ZeroForge](https://zero-forge.org) marketplace.
+**Build, test, certify, and publish skills for [AgentZero](https://github.com/frdel/agent-zero) — all from your terminal.**
 
-```
-███████╗███████╗ ██████╗ ██████╗  ██████╗ ███████╗
-╚══███╔╝██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝
-  ███╔╝ █████╗  ██║   ██║██████╔╝██║  ███╗█████╗
- ███╔╝  ██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝
-███████╗██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗
-╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝
-```
+[![PyPI](https://img.shields.io/pypi/v/zforge?color=amber&label=PyPI)](https://pypi.org/project/zforge/)
+[![Python](https://img.shields.io/pypi/pyversions/zforge)](https://pypi.org/project/zforge/)
+[![License](https://img.shields.io/github/license/colin-charles/zforge)](LICENSE)
 
-## What is zforge?
+---
 
-`zforge` is a command-line tool for AgentZero skill developers. It helps you:
-
-- 🔐 **Authenticate** via GitHub — one-time browser login
-- 🏗️ **Scaffold** new skills from a standard template
-- ✅ **Validate** skills against the AgentZero SKILL.md standard
-- 📦 **Build** distributable skill packages
-- 🚀 **Publish** skills to the ZeroForge marketplace with verified attribution
-- 🧪 **Test** skill behaviour before release
-
-
-## Trust & Safety
-
-`zforge` is fully **open source** (MIT licensed). Every line of code is publicly auditable:
-
-👉 **Source:** [github.com/colin-charles/zforge](https://github.com/colin-charles/zforge)  
-👉 **Author:** colin-charles — [hello@zero-forge.org](mailto:hello@zero-forge.org)  
-👉 **PyPI:** [pypi.org/project/zforge](https://pypi.org/project/zforge/)
-
-- No telemetry or analytics collected
-- API key stored locally in `~/.zforge/config.json` (never transmitted except to ZeroForge's own API)
-- All marketplace interactions go through ZeroForge's public API
-- Dependencies: `typer` and `rich` only — both widely trusted open-source libraries
-
-## Installation
+## 🚀 Install
 
 ```bash
 pip install zforge
 ```
 
-Or use the one-liner:
+## ✨ What It Does
+
+zforge is the official CLI for the [ZeroForge Marketplace](https://zero-forge.org) — the open marketplace for AgentZero skills, scripts, and templates.
+
+| Feature | Description |
+|---------|-------------|
+| **Scaffold** | Generate a skill project with proper structure in seconds |
+| **Build** | Package your skill into a distributable `.zip` archive |
+| **Validate** | Check your skill meets the SKILL.md standard before publishing |
+| **Test** | Run your skill's test suite locally |
+| **Certify** | Get automated APOL quality scoring (7-model consensus) |
+| **Publish** | Ship directly to the ZeroForge Marketplace |
+| **Login** | One-command GitHub OAuth — no tokens to copy-paste |
+
+## 📦 Quick Start
 
 ```bash
-curl -fsSL https://zero-forge.org/install.sh | bash
-```
+# 1. Install
+pip install zforge
 
-## Quick Start
-
-```bash
-# 1. Authenticate with GitHub (one-time setup)
+# 2. Authenticate with GitHub
 zforge login
 
-# 2. Create a new skill
-zforge new my-skill
+# 3. Create a new skill
+zforge new my-awesome-skill
+cd my-awesome-skill
 
-# 3. Validate your skill
-zforge validate my-skill/
+# 4. Edit SKILL.md with your skill's instructions
 
-# 4. Build a distributable package
-zforge build my-skill/
-
-# 5. Publish to ZeroForge marketplace
-zforge publish my-skill/
+# 5. Validate, build, publish
+zforge validate
+zforge build
+zforge publish
 ```
 
-## Commands
+## 🔧 All Commands
 
 | Command | Description |
 |---------|-------------|
-| `zforge hello` | First-run welcome — verify installation and show usage |
-| `zforge info` | Show CLI version and available commands |
-| `zforge login` | Authenticate via GitHub (browser OAuth) |
-| `zforge login --manual` | Authenticate by pasting API key (interactive) |
-| `zforge login --token <key>` | Headless / CI / agent authentication |
-| `ZFORGE_API_KEY=<key> zforge publish` | One-off publish with env var (no credentials saved) |
-| `zforge whoami` | Show currently authenticated user |
-| `zforge new <name>` | Scaffold a new skill directory from template |
-| `zforge dev` | Run APOL experiment pipeline to generate/refine SKILL.md |
-| `zforge validate` | Validate skill against ZeroForge quality standards |
-| `zforge test` | Run SkillTest.md test suite against a skill |
-| `zforge build <name> <desc>` | Full automated pipeline: scaffold → APOL → validate → test → publish |
-| `zforge publish` | Validate, certify (APOL), and publish to marketplace |
-| `zforge list` | Browse approved skills on the marketplace |
-| `zforge search <query>` | Search the marketplace by keyword |
-| `zforge install <name>` | Download and install a skill from the marketplace |
+| `zforge new <name>` | Scaffold a new skill project |
+| `zforge build` | Package skill into `.zip` |
+| `zforge validate` | Check SKILL.md structure and required fields |
+| `zforge test` | Run skill tests |
+| `zforge publish` | Build, validate, certify, and publish to marketplace |
+| `zforge login` | Authenticate via GitHub OAuth (browser-based) |
+| `zforge login --token <key>` | Authenticate with an API key |
+| `zforge whoami` | Show current authenticated user |
+| `zforge logout` | Clear stored credentials |
+| `zforge report` | Submit a bug report (opens GitHub Issue) |
+| `zforge version` | Show CLI version |
 
-## Authentication
+## 🏪 ZeroForge Marketplace
 
-`zforge login` authenticates you via GitHub OAuth — no copy-paste required:
+**[zero-forge.org](https://zero-forge.org)** — Browse, discover, and install community skills.
 
-```bash
-$ zforge login
+Every published skill goes through **APOL certification** — an automated quality assessment using 7-model AI consensus scoring across documentation, structure, security, and usefulness.
 
-  Opening browser for GitHub authentication...
-  Waiting for callback on http://localhost:7391...
+## 🤖 For AgentZero Agents
 
-  [browser opens → click Authorize on GitHub]
-
-  ✔  Authenticated as @your-handle
-  ✔  API key saved to ~/.zforge/config.json
-```
-
-> 🔐 **Security:** Uses PKCE (OAuth 2.1) — your `access_token` is never exposed in the browser URL, never written to disk, and never logged in browser history.
-
-**Prefer manual setup?** Use the `--manual` flag:
+zforge is designed to be used by both humans and AI agents. Agents can:
 
 ```bash
-zforge login --manual
-# Prompts you to paste your API key from zero-forge.org/profile/edit/
+# Authenticate non-interactively
+zforge login --token $ZFORGE_API_KEY
+
+# Build and publish skills autonomously
+zforge publish
 ```
 
-**Check who you're logged in as:**
+See the [install-zforge](https://zero-forge.org/listing/?slug=install-zforge) skill for agent setup instructions.
 
-```bash
-$ zforge whoami
-  Logged in as @your-handle
-```
+## 📄 License
 
-**For CI/CD or agent environments**, set the env var instead:
+MIT — see [LICENSE](LICENSE)
 
-```bash
-export ZFORGE_API_KEY=your-api-key
-zforge publish my-skill/
-```
+## 🔗 Links
 
-> Authentication is required before publishing. Skills published without a valid API key will be rejected.
-
-## How Certification Works
-
-When you run `zforge publish`, the CLI automatically evaluates your skill quality using the **APOL pipeline** — an LLM-based judge that scores your `SKILL.md` across four dimensions:
-
-| KPI | What is checked | Weight |
-|-----|----------------|--------|
-| Task Specificity | Are tasks described with precise, actionable detail? | High |
-| Example Quality | Are examples concrete, realistic, and complete? | High |
-| Scope Accuracy | Does the skill do what it says — no more, no less? | Medium |
-| Submission Ready | Is the skill ready for production use? | Gate |
-
-### The publish flow
-
-```
-zforge publish my-skill/
-  │
-  ├── Auth check (API key required)
-  │
-  ├── Structural validation (required fields/sections)
-  │
-  ├── APOL quality scoring
-  │     └── Score ≥ 0.80  →  CERTIFIED badge ✅  published immediately
-  │
-  └── Score < 0.80  →  You choose:
-
-        A) Publish now as UNCERTIFIED
-        B) Run APOL improvement pipeline
-
-             B → LLM refines documentation (intent preserved)
-               → Shows diff before overwriting
-               → You confirm [Y/N]
-               → Score ≥ 0.80 → CERTIFIED ✅
-```
-
-> **Your intent is always protected.** The APOL pipeline only improves *how* your skill is documented — never *what* it does. You review every change before it is saved.
-
-### What CERTIFIED means
-
-A **CERTIFIED** badge means the skill was independently scored at ≥ 0.80 by the APOL LLM judge. It is a quality signal, not just a compliance check.
-
-An **UNCERTIFIED** skill is structurally valid and usable — it just hasn't passed the quality threshold yet.
-
-## Using as an AgentZero Skill
-
-`zforge` ships as an installable AgentZero skill. To install it inside Agent Zero:
-
-```
-Install the zforge skill from zero-forge.org/start
-```
-
-See [SKILL.md](./SKILL.md) for the full Agent Zero skill instructions.
-
-## Requirements
-
-- Python 3.10+
-- `typer >= 0.9.0`
-- `rich >= 13.0.0`
-
-## Contributing
-
-PRs welcome. Please validate your changes with `zforge validate` before submitting.
-
-## License
-
-MIT — see [LICENSE](./LICENSE)
-
-## Links
-
-- 🌐 Marketplace: [zero-forge.org](https://zero-forge.org)
-- 💬 Community: [zero-forge.org/zeroden](https://zero-forge.org/zeroden)
-- 🚀 Get Started: [zero-forge.org/start](https://zero-forge.org/start)
+- **Marketplace:** [zero-forge.org](https://zero-forge.org)
+- **Changelog:** [zero-forge.org/changelog](https://zero-forge.org/changelog/)
+- **Issues:** [GitHub Issues](https://github.com/colin-charles/zforge/issues)
+- **Community:** [ZeroDen Discord](https://zero-forge.org/zeroden/)
