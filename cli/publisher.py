@@ -31,7 +31,7 @@ except ImportError:
 # Internal validator — CERTIFIED badge is earned, not self-reported
 from cli.validator import run_validate as _run_validator
 from cli.apol import apol_certify
-from cli._config import load_credentials as _load_zforge_credentials, CONFIG_PATH
+from cli._config import load_credentials as _load_zforge_credentials
 from cli._console import HAS_RICH, console, _print, _rule
 from cli._constants import (
     _PUBLIC_SUPABASE_URL, _PUBLIC_SUPABASE_ANON, _PUBLIC_SUPABASE_SVC,

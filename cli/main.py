@@ -1,7 +1,7 @@
 import re
 """zforge -- ZeroForge Skill Development CLI."""
 import sys
-import threading
+
 import urllib.request
 import urllib.error
 import json as _json
@@ -679,7 +679,6 @@ def search(
     anon_key = os.environ.get("SUPABASE_ANON_KEY") or _PUBLIC_SUPABASE_ANON
 
     # Search title and description via ilike
-    import urllib.parse
     q = urllib.parse.quote(f"%{query}%")
     url = (
         f"{supabase_url}/rest/v1/listings"
