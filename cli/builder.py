@@ -90,7 +90,10 @@ def _get_api_key(model: str) -> str:
 def _banner(name: str) -> None:
     """Print the zforge build banner with pipeline step overview."""
     _rule(f"zforge build -- {name}")
-    _print(f"  [bold]Starting full automated pipeline for:[/bold] [yellow]{name}[/yellow]" if HAS_RICH else f"  Starting full pipeline for: {name}")
+    msg = (f"  [bold]Starting full automated pipeline for:[/bold]"
+           f" [yellow]{name}[/yellow]"
+           if HAS_RICH else f"  Starting full pipeline for: {name}")
+    _print(msg)
     _print("  Steps: scaffold → goal → dev → promote → skill.json → validate → test → publish\n")
 
 def _validate_description(description: str) -> None:
@@ -109,7 +112,10 @@ def _validate_description(description: str) -> None:
         if HAS_RICH:
             console.print("[bold red]\n🚫 DESCRIPTION TOO SHORT — BUILD BLOCKED[/bold red]")
             console.print(f"  Got {word_count} words. Minimum is 8. APOL needs detail to score {CERTIFIED_THRESHOLD}+.")
-            console.print("  [yellow]Example:[/yellow] Scan a target directory and report all files modified in the last N days, output as table or JSON")
+            console.print(
+                "  [yellow]Example:[/yellow] Scan a target directory and report"
+                " all files modified in the last N days, output as table or JSON"
+            )
         else:
             print(f"\n🚫 DESCRIPTION BLOCKED: {word_count} words (min 8).")
             print("  Example: Scan a target directory and report all files modified in the last N days, output as table or JSON")
@@ -807,7 +813,10 @@ def build(
     _rule("Step 6/7 — Validate")
     rc = run_step("zforge validate", ["zforge", "validate"], skill_dir)
     if rc != 0:
-        _print("  [yellow]⚠ Validation issues found — review above before publishing.[/yellow]" if HAS_RICH else "  ⚠ Validation issues found.")
+        _print(
+            "  [yellow]⚠ Validation issues found — review above before publishing.[/yellow]"
+            if HAS_RICH else "  ⚠ Validation issues found."
+        )
 
     # ── STEP 6.5: Issue APOL Certificate ─────────────────────────
     _rule("Step 6.5/7 — Issuing APOL Certificate")
@@ -815,9 +824,17 @@ def build(
     if cert and "signature" in cert:
         _update_skill_json_with_cert(skill_dir, cert)
         _print("  [bold green]✓ APOL Certificate issued![/bold green]" if HAS_RICH else "  ✓ APOL Certificate issued!")
-        _print(f"  [dim]Cert ID: {cert.get('experiment_id')} | Sig: {cert.get('signature', '')[:16]}...[/dim]" if HAS_RICH else f"  Cert ID: {cert.get('experiment_id')}")
+        cert_id = cert.get('experiment_id')
+        cert_sig = cert.get('signature', '')[:16]
+        _print(
+            f"  [dim]Cert ID: {cert_id} | Sig: {cert_sig}...[/dim]"
+            if HAS_RICH else f"  Cert ID: {cert_id}"
+        )
     else:
-        _print("  [yellow]⚠ APOL cert not issued — skill.json quality section unchanged[/yellow]" if HAS_RICH else "  ⚠ APOL cert not issued")
+        _print(
+            "  [yellow]⚠ APOL cert not issued — skill.json quality section unchanged[/yellow]"
+            if HAS_RICH else "  ⚠ APOL cert not issued"
+        )
 
     # ── STEP 7: Test ─────────────────────────────────────────────
     _rule("Step 7/7 — Test")
@@ -882,9 +899,17 @@ def build(
                 _print(f"  PUBLISH BLOCKED — APOL score {apol_score:.3f} < CERTIFIED_THRESHOLD minimum.")
             return  # Hard stop — do not publish
         elif apol_score is not None:
-            _print(f"  [green]✅ APOL gate passed: {apol_score:.3f} >= CERTIFIED_THRESHOLD[/green]" if HAS_RICH else f"  ✅ APOL gate: {apol_score:.3f} >= CERTIFIED_THRESHOLD")
+            _print(
+                f"  [green]✅ APOL gate passed: {apol_score:.3f} >= CERTIFIED_THRESHOLD[/green]"
+                if HAS_RICH
+                else f"  ✅ APOL gate: {apol_score:.3f} >= CERTIFIED_THRESHOLD"
+            )
         else:
-            _print("  [yellow]⚠ APOL score not found — skipping gate check[/yellow]" if HAS_RICH else "  ⚠ APOL score not found — skipping gate check")
+            _print(
+                "  [yellow]⚠ APOL score not found — skipping gate check[/yellow]"
+                if HAS_RICH
+                else "  ⚠ APOL score not found — skipping gate check"
+            )
 
         cmd = ["zforge", "publish", "."]
         if dry_run:

@@ -42,7 +42,7 @@ and publish **skills** (reusable AI agent capabilities) to the ZeroForge marketp
 │  new ──→ scaffold.py      validate ──→ validator.py             │
 │  dev ──→ runner.py        test ──────→ tester.py                │
 │  build ──→ builder.py     publish ───→ publisher.py             │
-│  login/whoami ──→ (inline in main.py)                           │
+│  login ──→ auth.py │ whoami ──→ (inline in main.py)             │
 │  list/search/install ──→ (inline, queries Supabase)             │
 │  run ──→ (inline, downloads + executes skill)                   │
 │  setup ──→ (inline, installs dependencies)                      │
@@ -100,7 +100,8 @@ and publish **skills** (reusable AI agent capabilities) to the ZeroForge marketp
 
 | File | Lines | Purpose |
 |------|------:|---------|
-| `main.py` | 1470 | **CLI entry point.** Defines all `zforge` commands using Typer. Routes to other modules. Also contains inline logic for `login`, `whoami`, `list`, `search`, `install`, `run`, `setup`. |
+| `main.py` | 903 | **CLI entry point.** Defines all `zforge` commands using Typer. Routes to other modules. Contains inline logic for `whoami`, `list`, `search`, `install`, `run`, `setup`. Login delegates to `auth.py`. |
+| `auth.py` | 345 | **Authentication module.** Extracted from `main.py`. Handles GitHub OAuth PKCE flow, manual API key entry, and `--token` flag for CI/headless login. |
 | `publisher.py` | 950 | **Publish pipeline.** Packages skills, uploads to Supabase Storage, submits metadata via edge function, displays APOL results. |
 | `builder.py` | 1069 | **AI-assisted skill builder.** Generates SKILL.md from description using LLM, builds skill.json, runs script repair loops, optionally triggers local APOL scoring. |
 | `apol.py` | 667 | **APOL certification client.** Calls the `apol-judge` and `apol-refine` edge functions. Displays KPI scores. Used by builder.py for preview scoring. |
@@ -154,22 +155,22 @@ Where to find the code for each `zforge` command:
 
 | Command | Defined In | Handler Function | Delegates To |
 |---------|-----------|-------------------|---------------|
-| `zforge` (no args) | main.py:194 | `_main()` | Shows help + update check |
-| `zforge hello` | main.py:218 | `hello()` | — (inline) |
-| `zforge login` | main.py:266 | `login()` | GitHub OAuth flow (inline) |
-| `zforge whoami` | main.py:598 | `whoami()` | Reads ~/.zforge/config.json |
-| `zforge info` | main.py:642 | `info()` | — (inline) |
-| `zforge new` | main.py:687 | `new()` | `scaffold.scaffold_skill()` |
-| `zforge dev` | main.py:709 | `dev()` | `runner.run_dev()` |
-| `zforge validate` | main.py:731 | `validate()` | `validator.run_validate()` |
-| `zforge test` | main.py:758 | `test()` | `tester.run_test()` |
-| `zforge publish` | main.py:776 | `publish()` | `publisher.publish_skill()` |
-| `zforge build` | main.py:802 | `build()` | `builder.build()` |
-| `zforge list` | main.py:847 | `list_skills()` | Queries Supabase (inline) |
-| `zforge search` | main.py:924 | `search()` | Queries Supabase (inline) |
-| `zforge install` | main.py:981 | `install()` | Downloads from Supabase (inline) |
-| `zforge setup` | main.py:1194 | `setup()` | Installs deps (inline) |
-| `zforge run` | main.py:1291 | `run_skill()` | Downloads + executes (inline) |
+| `zforge` (no args) | main.py | `_main()` | Shows help + update check |
+| `zforge hello` | main.py | `hello()` | — (inline) |
+| `zforge login` | main.py | `login()` → `auth.py` | GitHub OAuth PKCE / manual / token |
+| `zforge whoami` | main.py | `whoami()` | Reads ~/.zforge/config.json |
+| `zforge info` | main.py | `info()` | — (inline) |
+| `zforge new` | main.py | `new()` | `scaffold.scaffold_skill()` |
+| `zforge dev` | main.py | `dev()` | `runner.run_dev()` |
+| `zforge validate` | main.py | `validate()` | `validator.run_validate()` |
+| `zforge test` | main.py | `test()` | `tester.run_test()` |
+| `zforge publish` | main.py | `publish()` | `publisher.publish_skill()` |
+| `zforge build` | main.py | `build()` | `builder.build()` |
+| `zforge list` | main.py | `list_skills()` | Queries Supabase (inline) |
+| `zforge search` | main.py | `search()` | Queries Supabase (inline) |
+| `zforge install` | main.py | `install()` | Downloads from Supabase (inline) |
+| `zforge setup` | main.py | `setup()` | Installs deps (inline) |
+| `zforge run` | main.py | `run_skill()` | Downloads + executes (inline) |
 
 ---
 
@@ -296,7 +297,7 @@ Alphabetical listing of important functions with file and line number.
 | `_load_zforge_credentials()` | publisher.py | 49 | Read API key + handle from ~/.zforge/config.json |
 | `_print()` | publisher.py | 147 | Print with Rich styling (or plain fallback) |
 | `_rule()` | publisher.py | 157 | Print horizontal rule divider |
-| `_save_zforge_config()` | main.py | 542 | Write API key + handle to ~/.zforge/config.json |
+| `_save_and_confirm()` | auth.py | — | Save credentials and print success banner |
 | `_script_repair_loop()` | builder.py | 693 | Iteratively fix skill script errors using LLM |
 | `_should_exclude()` | publisher.py | 318 | Check if a file should be excluded from the skill zip |
 | `_show_marketplace_url()` | builder.py | 774 | Display the marketplace URL after build |
@@ -353,7 +354,7 @@ Alphabetical listing of important functions with file and line number.
 | `test()` | `tester.run_test()` |
 | `publish()` | `publisher.publish_skill()` |
 | `build()` | `builder.build()` |
-| `login()` | `_save_zforge_config()`, `_print_zforge_login_success()` |
+| `login()` | `auth.login_with_token()`, `auth.login_manual()`, `auth.login_browser_oauth()` |
 | `whoami()` | reads `~/.zforge/config.json` directly |
 | `install()` | `_fetch()` → Supabase REST API |
 | `list_skills()` | Supabase REST API directly |

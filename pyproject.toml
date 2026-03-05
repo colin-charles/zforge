@@ -49,3 +49,14 @@ build = []
 
 [tool.setuptools.package-data]
 "cli" = ["scripts/*.py", "scripts/__init__.py"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 140
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"cli/scripts/02_run_experiment.py" = ["E501"]  # R&D script, long lines OK
