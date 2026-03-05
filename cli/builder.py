@@ -23,6 +23,8 @@ except ImportError:
         def rule(self, t=""): print(f"\n{'='*60} {t} {'='*60}")
     console = _FallbackConsole()
 
+from cli._console import _print, _rule  # shared console helpers
+
 try:
     import litellm
     litellm.set_verbose = False
@@ -78,18 +80,7 @@ def _get_api_key(model: str) -> str:
     return _os.environ.get("API_KEY_OPENROUTER") or _os.environ.get("OPENROUTER_API_KEY", "")
 
 
-def _print(msg, style=""):
-    if HAS_RICH:
-        console.print(msg, style=style)
-    else:
-        print(msg)
-
-
-def _rule(title):
-    if HAS_RICH:
-        console.rule(f"[bold cyan]{title}[/bold cyan]")
-    else:
-        print(f"\n{'='*60} {title} {'='*60}")
+# _print and _rule imported from cli._console
 
 
 def _banner(name):
@@ -669,6 +660,77 @@ def _show_marketplace_url(skill_dir, supabase_url, anon_key, use_rich, console):
     except Exception:
         pass  # Non-critical, don't break the flow
 
+
+def _normalize_category(category: str) -> str:
+    """Map common invalid category values to valid marketplace categories."""
+    VALID_CATEGORIES = {"skill", "guide", "template", "script", "course", "consulting"}
+    CATEGORY_MAP = {
+        "utilities": "skill", "utility": "script", "tools": "script",
+        "scripts": "script", "guides": "guide", "templates": "template",
+        "courses": "course", "plugin": "skill", "extension": "skill",
+        "workflow": "skill", "agent": "skill",
+    }
+    if category not in VALID_CATEGORIES:
+        normalized = CATEGORY_MAP.get(category.lower(), "skill")
+        _print(f"  [yellow]⚠ Category '{category}' is not valid — normalized to '{normalized}'[/yellow]" if HAS_RICH
+               else f"  ⚠ Category '{category}' normalized to '{normalized}'")
+        return normalized
+    return category
+
+
+def _update_skill_json_with_cert(skill_dir: Path, cert: dict) -> None:
+    """Write APOL certificate data into skill.json quality section."""
+    sj_path = skill_dir / "skill.json"
+    if not sj_path.exists():
+        return
+    sj = json.loads(sj_path.read_text())
+    if "quality" not in sj:
+        sj["quality"] = {}
+    sj["quality"]["apol_certified"]      = True
+    sj["quality"]["apol_cert_id"]        = cert.get("experiment_id", "")
+    sj["quality"]["apol_cert_signature"] = cert.get("signature", "")
+    sj["quality"]["apol_cert_issued_at"] = cert.get("issued_at", "")
+    sj["quality"]["apol_cert_url"]       = f"https://zero-forge.org/verify/{cert.get('experiment_id', '')}"
+    # Keep composite score if already set, else derive from cert
+    if not sj["quality"].get("apol_composite_score"):
+        fjs = cert.get("final_judge_score", 0)
+        sj["quality"]["apol_composite_score"] = round(fjs / 5.0, 4)
+    sj_path.write_text(json.dumps(sj, indent=2))
+
+
+def _run_tests_with_repair(skill_dir: Path) -> None:
+    """Run test suite; on failure, attempt AI script repair and re-test."""
+    rc = run_step("zforge test", ["zforge", "test", "--skill", "."], skill_dir)
+    if rc == 0:
+        _print("  [bold green]✅ All tests passed![/bold green]" if HAS_RICH else "  ✅ All tests passed!")
+        return
+
+    _print("\n  [bold yellow]⚠ Tests failed — launching AI Script Repair Loop...[/bold yellow]" if HAS_RICH
+           else "\n  ⚠ Tests failed — launching AI Script Repair Loop...")
+    repaired = _script_repair_loop(skill_dir)
+    if repaired:
+        _print("  [cyan]Re-running full test suite to confirm repair...[/cyan]" if HAS_RICH
+               else "  Re-running full test suite to confirm repair...")
+        rc = run_step("zforge test", ["zforge", "test", "--skill", "."], skill_dir)
+        if rc != 0:
+            if HAS_RICH:
+                console.print("\n  [bold yellow]⚠ Tests still failing after repair — continuing to publish step.[/bold yellow]")
+                console.print("  [dim]Fix scripts/main.py manually before publishing to ensure quality.[/dim]")
+            else:
+                print("\n  ⚠ Tests still failing after repair — continuing to publish step.")
+                print("  Fix scripts/main.py manually before publishing to ensure quality.")
+        else:
+            _print("  [bold green]✅ Script repair confirmed — all tests pass![/bold green]" if HAS_RICH
+                   else "  ✅ Script repair confirmed — all tests pass!")
+    else:
+        if HAS_RICH:
+            console.print("\n  [bold yellow]⚠ Script Repair Loop unavailable — continuing to publish step.[/bold yellow]")
+            console.print("  [dim]Fix scripts/main.py manually: zforge test --skill . to verify.[/dim]")
+        else:
+            print("\n  ⚠ Script Repair Loop unavailable — continuing to publish step.")
+            print("  Fix scripts/main.py manually: zforge test --skill . to verify.")
+
+
 def build(
     skill_name: str,
     description: str,
@@ -730,19 +792,7 @@ def build(
     shutil.copy(winner_path, skill_dir / "SKILL.md")
     _print(f"  [green]✓[/green] WINNER.md promoted to SKILL.md" if HAS_RICH else "  ✓ WINNER.md → SKILL.md")
 
-    # ── Category normalizer: map common invalid values to valid categories ──
-    VALID_CATEGORIES = {"skill", "guide", "template", "script", "course", "consulting"}
-    CATEGORY_MAP = {
-        "utilities": "skill", "utility": "script", "tools": "script",
-        "scripts": "script", "guides": "guide", "templates": "template",
-        "courses": "course", "plugin": "skill", "extension": "skill",
-        "workflow": "skill", "agent": "skill",
-    }
-    if category not in VALID_CATEGORIES:
-        normalized = CATEGORY_MAP.get(category.lower(), "skill")
-        _print(f"  [yellow]⚠ Category '{category}' is not valid — normalized to '{normalized}'[/yellow]" if HAS_RICH
-               else f"  ⚠ Category '{category}' normalized to '{normalized}'")
-        category = normalized
+    category = _normalize_category(category)
 
     # ── STEP 5: Populate skill.json ───────────────────────────────
     _rule("Step 5/7 — Populating skill.json")
@@ -758,23 +808,7 @@ def build(
     _rule("Step 6.5/7 — Issuing APOL Certificate")
     cert = _issue_apol_cert(skill_dir, skill_name)
     if cert and "signature" in cert:
-        # Update skill.json quality section with cert data
-        import json as _certjson
-        sj_path = skill_dir / "skill.json"
-        if sj_path.exists():
-            sj = _certjson.loads(sj_path.read_text())
-            if "quality" not in sj:
-                sj["quality"] = {}
-            sj["quality"]["apol_certified"]      = True
-            sj["quality"]["apol_cert_id"]        = cert.get("experiment_id", "")
-            sj["quality"]["apol_cert_signature"] = cert.get("signature", "")
-            sj["quality"]["apol_cert_issued_at"] = cert.get("issued_at", "")
-            sj["quality"]["apol_cert_url"]       = f"https://zero-forge.org/verify/{cert.get('experiment_id', '')}"
-            # Keep composite score if already set, else derive from cert
-            if not sj["quality"].get("apol_composite_score"):
-                fjs = cert.get("final_judge_score", 0)
-                sj["quality"]["apol_composite_score"] = round(fjs / 5.0, 4)
-            sj_path.write_text(_certjson.dumps(sj, indent=2))
+        _update_skill_json_with_cert(skill_dir, cert)
         _print(f"  [bold green]✓ APOL Certificate issued![/bold green]" if HAS_RICH else "  ✓ APOL Certificate issued!")
         _print(f"  [dim]Cert ID: {cert.get('experiment_id')} | Sig: {cert.get('signature', '')[:16]}...[/dim]" if HAS_RICH else f"  Cert ID: {cert.get('experiment_id')}")
     else:

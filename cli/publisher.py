@@ -77,36 +77,20 @@ _SUBMIT_EDGE_URL = "https://turwttpspnqmhszjwjgs.supabase.co/functions/v1/submit
 _CLI_TOKEN       = "zforge-submit-v2"  # public abuse-gate token, not a secret
 
 
+from cli._console import HAS_RICH, console, _print, _rule
+
 try:
-    from rich.console import Console
     from rich.panel import Panel
     from rich.table import Table
     from rich import box
-    from rich.rule import Rule
-    console = Console()
-    HAS_RICH = True
 except ImportError:
-    HAS_RICH = False
-    console = None
+    pass
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _print(msg: str, style: str = ""):
-    if HAS_RICH:
-        console.print(msg, style=style if style else None)
-    else:
-        import re
-        plain = re.sub(r'\[/?[a-zA-Z_ ]+\]', '', msg)
-        print(plain)
-
-
-def _rule(title: str):
-    if HAS_RICH:
-        console.print(Rule(title))
-    else:
-        print(f"\n{'-' * 60} {title} {'-' * 60}")
+# _print and _rule imported from cli._console
 
 
 def load_env():
@@ -420,15 +404,34 @@ def _submit_to_edge_function(payload: dict, api_key: str = '') -> dict:
     raise RuntimeError(f"Submission failed [{resp.status_code}]: {msg}")
 
 
-def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str = ""):
-    skill_dir = Path(skill_dir_arg).resolve()
-    skill_name = skill_dir.name
+def _show_publish_result(listing_id: str, apol_certified: bool, storage_url: str,
+                        resolved_source: str, record_name: str):
+    """Display the post-publish result panel."""
+    if HAS_RICH:
+        _status = ("[green]approved — live on marketplace[/green]"
+                   if apol_certified
+                   else "[yellow]pending admin review[/yellow]")
+        lines = (
+            "[bold green]Listing created![/bold green]\n\n"
+            f"  [bold]ID:[/bold]          {listing_id}\n"
+            f"  [bold]Status:[/bold]      {_status}\n"
+            f"  [bold]Storage URL:[/bold] {storage_url or '(none)'}\n"
+            f"  [bold]Source URL:[/bold]  {resolved_source or '(private)'}\n"
+            f"  [bold]Listing:[/bold]     https://zero-forge.org/listing/?id={listing_id}\n"
+            f"  [bold]Record:[/bold]      {record_name}\n"
+        )
+        console.print(Panel(
+            lines,
+            title="[bold green]Published[/bold green]",
+            border_style="green",
+        ))
+    else:
+        print(f"\nPublished! ID: {listing_id}")
+        print(f"  https://zero-forge.org/listing/?id={listing_id}")
 
-    _rule(f"zforge publish -- {skill_name}")
 
-    # ── MANDATORY LOGIN GATE ────────────────────────────────────────────────
-    # Check ~/.zforge/config.json first, then ZFORGE_API_KEY env var.
-    # No valid API key = hard stop. Run `zforge login` to authenticate.
+def _validate_credentials() -> tuple:
+    """Validate login credentials. Returns (api_key, verified_handle) or exits."""
     _raw_creds = _load_zforge_credentials()
     _api_key   = _raw_creds.get('api_key') or os.environ.get('ZFORGE_API_KEY', '').strip()
 
@@ -458,6 +461,17 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
 
     _verified_handle = _verified['handle']
     _print(f"  [green]✔  Authenticated as @{_verified_handle}[/green]")
+    return _api_key, _verified_handle
+
+
+def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str = ""):
+    skill_dir = Path(skill_dir_arg).resolve()
+    skill_name = skill_dir.name
+
+    _rule(f"zforge publish -- {skill_name}")
+
+    # ── MANDATORY LOGIN GATE ──────────────────────────────────────────────
+    _api_key, _verified_handle = _validate_credentials()
     # ────────────────────────────────────────────────────────────────────────
 
 
@@ -682,21 +696,5 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
     record_path = skill_dir / 'publish_record.json'
     record_path.write_text(json.dumps(record, indent=2))
 
-    if HAS_RICH:
-        lines = (
-            "[bold green]Listing created![/bold green]\n\n"
-            f"  [bold]ID:[/bold]          {listing_id}\n"
-            f"  [bold]Status:[/bold]      {"[green]approved — live on marketplace[/green]" if _apol_certified else "[yellow]pending admin review[/yellow]"}\n"
-            f"  [bold]Storage URL:[/bold] {storage_url or '(none)'}\n"
-            f"  [bold]Source URL:[/bold]  {resolved_source or '(private)'}\n"
-            f"  [bold]Listing:[/bold]     https://zero-forge.org/listing/?id={listing_id}\n"
-            f"  [bold]Record:[/bold]      {record_path.name}\n"
-        )
-        console.print(Panel(
-            lines,
-            title="[bold green]Published[/bold green]",
-            border_style="green",
-        ))
-    else:
-        print(f"\nPublished! ID: {listing_id}")
-        print(f"  https://zero-forge.org/listing/?id={listing_id}")
+    _show_publish_result(listing_id, _apol_certified, storage_url,
+                          resolved_source, record_path.name)

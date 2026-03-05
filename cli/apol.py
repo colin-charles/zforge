@@ -30,18 +30,15 @@ try:
 except ImportError:
     HAS_REQUESTS = False
 
+from cli._console import HAS_RICH, console, _print, _rule
+
 try:
-    from rich.console import Console
     from rich.panel import Panel
     from rich.table import Table
     from rich import box
-    from rich.rule import Rule
     from rich.syntax import Syntax
-    console = Console()
-    HAS_RICH = True
 except ImportError:
-    HAS_RICH = False
-    console = None
+    pass
 
 # ── Constants ────────────────────────────────────────────────────────────────
 CERTIFIED_THRESHOLD = 0.80
@@ -54,19 +51,10 @@ _PUBLIC_SUPABASE_URL = "https://turwttpspnqmhszjwjgs.supabase.co"
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
-def _rprint(msg: str, style: str = ""):
-    if HAS_RICH:
-        console.print(msg, style=style or None)
-    else:
-        import re
-        print(re.sub(r'\[/?[a-zA-Z_ #/]+\]', '', msg))
+_rprint = _print  # alias for backward compat
 
 
-def _rule(title: str):
-    if HAS_RICH:
-        console.print(Rule(title))
-    else:
-        print(f"\n{'─' * 40} {title} {'─' * 40}")
+# _rule imported from cli._console
 
 
 def _ask(prompt: str) -> str:
