@@ -71,17 +71,22 @@ zforge publish my-skill/
 
 | Command | Description |
 |---------|-------------|
+| `zforge hello` | First-run welcome — verify installation and show usage |
+| `zforge info` | Show CLI version and available commands |
 | `zforge login` | Authenticate via GitHub (browser OAuth) |
 | `zforge login --manual` | Authenticate by pasting API key (interactive) |
-| `zforge login --token <key>` | Headless / CI / scripts no browser needed |
-| `ZFORGE_API_KEY=<key> zforge publish` | One-off publish no credentials saved |
+| `zforge login --token <key>` | Headless / CI / agent authentication |
+| `ZFORGE_API_KEY=<key> zforge publish` | One-off publish with env var (no credentials saved) |
 | `zforge whoami` | Show currently authenticated user |
-| `zforge new <name>` | Scaffold a new skill from template |
-| `zforge validate <dir>` | Validate skill against SKILL.md standard |
-| `zforge build <dir>` | Build a `.zip` skill package |
-| `zforge publish <dir>` | Publish skill to ZeroForge marketplace |
-| `zforge test <dir>` | Run skill tests |
-| `zforge hello` | Verify installation and show usage |
+| `zforge new <name>` | Scaffold a new skill directory from template |
+| `zforge dev` | Run APOL experiment pipeline to generate/refine SKILL.md |
+| `zforge validate` | Validate skill against ZeroForge quality standards |
+| `zforge test` | Run SkillTest.md test suite against a skill |
+| `zforge build <name> <desc>` | Full automated pipeline: scaffold → APOL → validate → test → publish |
+| `zforge publish` | Validate, certify (APOL), and publish to marketplace |
+| `zforge list` | Browse approved skills on the marketplace |
+| `zforge search <query>` | Search the marketplace by keyword |
+| `zforge install <name>` | Download and install a skill from the marketplace |
 
 ## Authentication
 
