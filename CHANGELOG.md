@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.52] - 2026-03-05
+### Fixed
+- Fix: define _show_marketplace_url (was undefined, causing NameError after publish)
+
+
 ## [2.1.51] - 2026-03-04
 ### Fixed
 - Fix: TypeError in APOL cert issuance — cycles field is int not list; now handles gracefully

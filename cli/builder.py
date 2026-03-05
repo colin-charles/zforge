@@ -652,6 +652,25 @@ def _script_repair_loop(skill_dir: Path) -> bool:
 
 
 
+
+
+def _show_marketplace_url(skill_dir, supabase_url, anon_key, use_rich, console):
+    """Show the marketplace URL after publishing."""
+    try:
+        sj = skill_dir / "skill.json"
+        if sj.exists():
+            _data = json.loads(sj.read_text())
+            _slug = _data.get("metadata", {}).get("slug", skill_dir.name)
+        else:
+            _slug = skill_dir.name.replace("_", "-").lower()
+        _url = f"https://zero-forge.org/listing/?skill={_slug}"
+        if use_rich and console is not None:
+            console.print(f"\n[bold green]🌐 View on marketplace:[/bold green] [link={_url}]{_url}[/link]")
+        else:
+            print(f"\n  🌐 View on marketplace: {_url}")
+    except Exception:
+        pass  # Non-critical, don't break the flow
+
 def build(
     skill_name: str,
     description: str,
