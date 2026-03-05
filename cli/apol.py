@@ -31,6 +31,9 @@ except ImportError:
     HAS_REQUESTS = False
 
 from cli._console import HAS_RICH, console, _print, _rule
+from cli._constants import (
+    CERTIFIED_THRESHOLD, _CLI_TOKEN, _PUBLIC_SUPABASE_URL,
+)
 
 try:
     from rich.panel import Panel
@@ -41,12 +44,7 @@ except ImportError:
     pass
 
 # ── Constants ────────────────────────────────────────────────────────────────
-CERTIFIED_THRESHOLD = 0.80
 MAX_CYCLES          = 3
-_CLI_TOKEN          = "zforge-submit-v2"
-
-# Public fallback — same project as submit-listing
-_PUBLIC_SUPABASE_URL = "https://turwttpspnqmhszjwjgs.supabase.co"
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────

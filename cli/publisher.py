@@ -33,16 +33,12 @@ from cli.validator import run_validate as _run_validator
 from cli.apol import apol_certify
 from cli._config import load_credentials as _load_zforge_credentials, CONFIG_PATH
 from cli._console import HAS_RICH, console, _print, _rule
+from cli._constants import (
+    _PUBLIC_SUPABASE_URL, _PUBLIC_SUPABASE_ANON, _PUBLIC_SUPABASE_SVC,
+    _SUBMIT_EDGE_URL, _UPLOAD_EDGE_URL, _CLI_TOKEN,
+    CERTIFIED_THRESHOLD, VALID_CATEGORIES, CATEGORY_MAP,
+)
 
-# ── Public read-only Supabase credentials (anon key — safe to embed) ─────────
-# Creators don't need to configure env vars to publish — these are fallbacks.
-_PUBLIC_SUPABASE_URL  = "§§secret(SUPABASE_URL)"
-_PUBLIC_SUPABASE_ANON = "§§secret(SUPABASE_ANON_KEY)"
-_PUBLIC_SUPABASE_SVC  = ""  # service key NEVER embedded in public package
-
-# ── Edge Function endpoint (routes submissions through service role — bypasses RLS)
-_SUBMIT_EDGE_URL = "§§secret(SUPABASE_URL)/functions/v1/submit-listing"
-_CLI_TOKEN       = "zforge-submit-v2"  # public abuse-gate token, not a secret
 
 
 # ---------------------------------------------------------------------------
@@ -271,7 +267,6 @@ def upload_to_storage(zip_path: Path, skill_name: str, service_key: str, supabas
 # ZIP upload via Edge Function (no service key needed on creator machines)
 # ---------------------------------------------------------------------------
 
-_UPLOAD_EDGE_URL = "§§secret(SUPABASE_URL)/functions/v1/upload-skill-zip"
 
 
 def upload_via_edge_function(zip_path, skill_name):
@@ -538,7 +533,7 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
     _cached_certified = getattr(quality, 'apol_certified', False)
     _cached_cert_id = getattr(quality, 'apol_cert_id', None)
 
-    if _cached_certified and _cached_score is not None and float(_cached_score) >= 0.80:
+    if _cached_certified and _cached_score is not None and float(_cached_score) >= CERTIFIED_THRESHOLD:
         # Skill was already scored and certified during `zforge build` — trust it, skip re-run
         _print(f"  [green]Build-time APOL score found: {round(float(_cached_score), 4)} — skipping re-evaluation[/green]")
         _apol_certified = True
@@ -560,15 +555,15 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
             apol_score      = getattr(quality, 'apol_composite_score', None) or _legacy_cert.get('composite_score')
 
     # 4. Category mapping
-    CATEGORY_MAP = {
+    CATEGORY_MAP = {**CATEGORY_MAP,
         "dev-tools": "skill", "development": "skill", "tool": "skill",
-        "guide": "guide", "tutorial": "guide", "howto": "guide",
-        "template": "template", "scaffold": "template",
-        "script": "script", "automation": "script",
-        "course": "course", "training": "course",
-        "consulting": "consulting", "service": "consulting",
+        "tutorial": "guide", "howto": "guide",
+        "scaffold": "template",
+        "automation": "script",
+        "training": "course",
+        "service": "consulting",
     }
-    VALID_CATEGORIES = {"skill", "guide", "template", "script", "course", "consulting"}
+    # VALID_CATEGORIES imported from cli._constants (module-level)
     raw_cat = (meta.category or "").lower().strip()
     mapped_cat = CATEGORY_MAP.get(raw_cat, raw_cat if raw_cat in VALID_CATEGORIES else "skill")
     tags_list = meta.tags if isinstance(meta.tags, list) else [str(meta.tags)]

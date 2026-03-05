@@ -7,6 +7,7 @@ import urllib.error
 import json as _json
 from pathlib import Path
 from cli._config import load_credentials, save_credentials, CONFIG_PATH
+from cli._constants import _PUBLIC_SUPABASE_URL, _PUBLIC_SUPABASE_ANON
 from typing import Optional
 
 import typer
@@ -116,9 +117,6 @@ def _run_update_check() -> None:
         os.execv(sys.executable, [sys.executable] + sys.argv)
 
 
-# Public read-only Supabase credentials (anon key — safe to embed)
-_PUBLIC_SUPABASE_URL  = "https://turwttpspnqmhszjwjgs.supabase.co"
-_PUBLIC_SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1cnd0dHBzcG5xbWhzemp3amdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMDM3NzAsImV4cCI6MjA4Nzc3OTc3MH0.fBajcHIJZs1lYwfEJRtnHvZdjqZ2u7YGIuPnhyAg85g"
 
 
 @app.callback(invoke_without_command=True)

@@ -3,6 +3,8 @@ from pathlib import Path
 import json
 import re
 
+from cli._constants import VALID_CATEGORIES
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -11,7 +13,6 @@ VALID_TAGS = {
     "agent": "skill", "automation": "skill", "productivity": "skill",
     "ai": "skill", "security": "skill", "media": "skill", "utility": "skill",
 }
-VALID_CATEGORIES = {"skill", "guide", "template", "script", "course", "consulting"}
 REQUIRED_SECTIONS = ["overview", "usage"]
 
 LINE = chr(9472) * 60

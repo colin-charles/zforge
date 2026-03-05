@@ -18,6 +18,8 @@ import os
 import re
 import sys
 import time
+
+from cli._constants import CERTIFIED_THRESHOLD
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -318,10 +320,10 @@ def main():
     print("")
 
     composite = w_scores.get("composite", 0)
-    if composite >= 0.80:
-        print(f"  APOL PASSED: {composite:.3f} >= 0.80  -- ready to publish")
+    if composite >= CERTIFIED_THRESHOLD:
+        print(f"  APOL PASSED: {composite:.3f} >= {CERTIFIED_THRESHOLD}  -- ready to publish")
     else:
-        print(f"  APOL score {composite:.3f} < 0.80  -- consider refining GOAL.md and re-running")
+        print(f"  APOL score {composite:.3f} < {CERTIFIED_THRESHOLD}  -- consider refining GOAL.md and re-running")
 
     sys.exit(0)
 

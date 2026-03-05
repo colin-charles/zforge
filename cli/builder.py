@@ -24,6 +24,10 @@ except ImportError:
     console = _FallbackConsole()
 
 from cli._console import _print, _rule  # shared console helpers
+from cli._constants import (
+    _PUBLIC_SUPABASE_URL, _PUBLIC_SUPABASE_ANON,
+    CERTIFIED_THRESHOLD, VALID_CATEGORIES, CATEGORY_MAP as _BASE_CATEGORY_MAP,
+)
 
 try:
     import litellm
@@ -103,7 +107,7 @@ def _validate_description(description: str) -> None:
     if word_count < 8:
         if HAS_RICH:
             console.print("[bold red]\n🚫 DESCRIPTION TOO SHORT — BUILD BLOCKED[/bold red]")
-            console.print(f"  Got {word_count} words. Minimum is 8. APOL needs detail to score 0.80+.")
+            console.print(f"  Got {word_count} words. Minimum is 8. APOL needs detail to score {CERTIFIED_THRESHOLD}+.")
             console.print("  [yellow]Example:[/yellow] Scan a target directory and report all files modified in the last N days, output as table or JSON")
         else:
             print(f"\n🚫 DESCRIPTION BLOCKED: {word_count} words (min 8).")
@@ -121,7 +125,7 @@ def _validate_description(description: str) -> None:
 
     if word_count < 15:
         if HAS_RICH:
-            console.print(f"[yellow]\n⚠ SHORT DESCRIPTION ({word_count} words) — may score below 0.80[/yellow]")
+            console.print(f"[yellow]\n⚠ SHORT DESCRIPTION ({word_count} words) — may score below {CERTIFIED_THRESHOLD}[/yellow]")
             console.print("  [dim]Tip: Add input params, output format, and use case.[/dim]")
         else:
             print(f"\n⚠ Short desc ({word_count} words). Consider adding input/output details.")
@@ -136,7 +140,7 @@ def _validate_description(description: str) -> None:
 def generate_goal_md(name: str, description: str, model: str) -> str:
     """Use LLM to expand a short description into a rich, technical GOAL.md.
 
-    Produces a 10-section spec designed to drive APOL scores above 0.80.
+    Produces a 10-section spec designed to drive APOL scores above the CERTIFIED_THRESHOLD.
     The richer the GOAL.md, the higher quality the SKILL.md drafts will be.
     """
     if not HAS_LITELLM:
@@ -298,7 +302,7 @@ def _issue_apol_cert(skill_dir: Path, skill_name: str) -> dict | None:
 
     # Load env
     # Use env vars if set, otherwise fall back to embedded public credentials
-    from cli.publisher import _PUBLIC_SUPABASE_URL, _PUBLIC_SUPABASE_ANON
+    # _PUBLIC_SUPABASE_URL, _PUBLIC_SUPABASE_ANON imported from cli._constants (module-level)
     supabase_url = (os.environ.get("SUPABASE_URL") or _PUBLIC_SUPABASE_URL).rstrip("/")
     anon_key     = os.environ.get("SUPABASE_ANON_KEY") or _PUBLIC_SUPABASE_ANON
     if not supabase_url or not anon_key:
@@ -337,7 +341,7 @@ def _issue_apol_cert(skill_dir: Path, skill_name: str) -> dict | None:
         if sj_fallback.exists():
             _sj = _json_meta.loads(sj_fallback.read_text())
             _cached_score = _sj.get("quality", {}).get("apol_composite_score")
-            if _cached_score and float(_cached_score) >= 0.80:
+            if _cached_score and float(_cached_score) >= CERTIFIED_THRESHOLD:
                 _print("  [cyan]ℹ Using cached APOL score from skill.json[/cyan]" if HAS_RICH
                        else "  ℹ Using cached APOL score from skill.json")
                 meta = {
@@ -385,7 +389,7 @@ def _issue_apol_cert(skill_dir: Path, skill_name: str) -> dict | None:
         judge_scores = f"Winner: {winner_name} | Composite: {composite_score:.4f} | Final Judge Score (0-5): {final_judge_score:.4f}"
 
     if len(judge_scores) < 50:
-        judge_scores = judge_scores + " | ZeroForge APOL Tournament — world-class quality gate (0.80+ threshold)"
+        judge_scores = judge_scores + f" | ZeroForge APOL Tournament — world-class quality gate ({CERTIFIED_THRESHOLD}+ threshold)"
 
     # Read or build APOL_RESULTS.md
     results_path = exp_dir / "APOL_RESULTS.md"
@@ -399,7 +403,7 @@ def _issue_apol_cert(skill_dir: Path, skill_name: str) -> dict | None:
             f"- Composite Score: {composite_score:.4f}\n"
             f"- Cycles Run: {cycles_run}\n\n"
             f"## Tournament Summary\n"
-            f"Quality threshold: 0.80 | Final score: {composite_score:.4f}\n"
+            f"Quality threshold: {CERTIFIED_THRESHOLD} | Final score: {composite_score:.4f}\n"
         )
 
     if len(apol_results_md) < 100:
@@ -663,11 +667,10 @@ def _show_marketplace_url(skill_dir, supabase_url, anon_key, use_rich, console):
 
 def _normalize_category(category: str) -> str:
     """Map common invalid category values to valid marketplace categories."""
-    VALID_CATEGORIES = {"skill", "guide", "template", "script", "course", "consulting"}
-    CATEGORY_MAP = {
+    # VALID_CATEGORIES imported from cli._constants (module-level)
+    CATEGORY_MAP = {**_BASE_CATEGORY_MAP,
         "utilities": "skill", "utility": "script", "tools": "script",
-        "scripts": "script", "guides": "guide", "templates": "template",
-        "courses": "course", "plugin": "skill", "extension": "skill",
+        "plugin": "skill", "extension": "skill",
         "workflow": "skill", "agent": "skill",
     }
     if category not in VALID_CATEGORIES:
@@ -851,7 +854,7 @@ def build(
         flag = "Step 8 — Publish" if publish else "Step 8 — Dry Run Publish"
         _rule(flag)
 
-        # 🔴 HARD GATE: Block publish if APOL score < 0.80
+        # 🔴 HARD GATE: Block publish if APOL score < CERTIFIED_THRESHOLD
         apol_score = None
         try:
             import glob as _glob, json as _json
@@ -868,15 +871,15 @@ def build(
         except Exception as _e:
             _print(f"  [yellow]⚠ Could not read APOL score: {_e}[/yellow]")
 
-        if apol_score is not None and apol_score < 0.80:
+        if apol_score is not None and apol_score < CERTIFIED_THRESHOLD:
             if HAS_RICH:
-                _print(f"  [bold red]🚫 PUBLISH BLOCKED — APOL score {apol_score:.3f} < 0.80 minimum.[/bold red]")
-                _print(f"  [red]Run `zforge build {skill_dir.name} --rebuild` to re-run APOL and reach 0.80+.[/red]")
+                _print(f"  [bold red]🚫 PUBLISH BLOCKED — APOL score {apol_score:.3f} < CERTIFIED_THRESHOLD minimum.[/bold red]")
+                _print(f"  [red]Run `zforge build {skill_dir.name} --rebuild` to re-run APOL and reach {CERTIFIED_THRESHOLD}+.[/red]")
             else:
-                _print(f"  PUBLISH BLOCKED — APOL score {apol_score:.3f} < 0.80 minimum.")
+                _print(f"  PUBLISH BLOCKED — APOL score {apol_score:.3f} < CERTIFIED_THRESHOLD minimum.")
             return  # Hard stop — do not publish
         elif apol_score is not None:
-            _print(f"  [green]✅ APOL gate passed: {apol_score:.3f} >= 0.80[/green]" if HAS_RICH else f"  ✅ APOL gate: {apol_score:.3f} >= 0.80")
+            _print(f"  [green]✅ APOL gate passed: {apol_score:.3f} >= CERTIFIED_THRESHOLD[/green]" if HAS_RICH else f"  ✅ APOL gate: {apol_score:.3f} >= CERTIFIED_THRESHOLD")
         else:
             _print("  [yellow]⚠ APOL score not found — skipping gate check[/yellow]" if HAS_RICH else "  ⚠ APOL score not found — skipping gate check")
 
@@ -904,7 +907,7 @@ def build(
         pass
 
     if HAS_RICH:
-        if _done_certified and _done_score is not None and _done_score >= 0.80:
+        if _done_certified and _done_score is not None and _done_score >= CERTIFIED_THRESHOLD:
             console.print(Panel(
                 "[bold green]✓ Skill ready:[/bold green] [yellow]" + str(skill_dir) + "[/yellow]\n"
                 "[bold green]🏆 APOL Score: " + str(round(_done_score, 3)) + " — CERTIFIED[/bold green]",
