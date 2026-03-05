@@ -1,47 +1,11 @@
-
 """zforge publish -- validate, package, upload, and publish a skill to ZeroForge marketplace."""
 from __future__ import annotations
-
-# Internal validator — CERTIFIED badge is earned, not self-reported
-from cli.validator import run_validate as _run_validator
-from cli.apol import apol_certify
 
 import json
 import os
 import sys
 import zipfile
 from datetime import datetime
-
-from cli._config import load_credentials as _load_zforge_credentials, CONFIG_PATH
-def _verify_api_key(api_key: str) -> dict:
-    "Verify API key via secure Supabase RPC (api_key column not exposed to anon)."
-    try:
-        import requests as _req
-    except ImportError:
-        return {}
-    url = _PUBLIC_SUPABASE_URL.rstrip("/") + "/rest/v1/rpc/verify_api_key"
-    headers = {
-        "apikey": _PUBLIC_SUPABASE_ANON,
-        "Authorization": "Bearer " + _PUBLIC_SUPABASE_ANON,
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-    }
-    try:
-        resp = _req.post(url, json={"key": api_key}, headers=headers, timeout=10)
-        if resp.status_code == 200:
-            rows = resp.json()
-            if rows:
-                return rows[0]
-            _print("  [bold red]ERROR: API key not found. Get yours at zero-forge.org/profile/edit/[/bold red]")
-            import sys as _sys; _sys.exit(1)
-        else:
-            _print(f"  [yellow]Warning: Could not verify API key (HTTP {resp.status_code}) - proceeding unverified[/yellow]")
-            return {}
-    except Exception as exc:
-        _print(f"  [yellow]Warning: API key verification skipped ({exc})[/yellow]")
-        return {}
-
-
 from pathlib import Path
 from typing import List, Optional
 
@@ -57,19 +21,6 @@ try:
 except ImportError:
     HAS_REQUESTS = False
 
-# ── Public read-only Supabase credentials (anon key — safe to embed) ─────────
-# Creators don't need to configure env vars to publish — these are fallbacks.
-_PUBLIC_SUPABASE_URL  = "https://turwttpspnqmhszjwjgs.supabase.co"
-_PUBLIC_SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1cnd0dHBzcG5xbWhzemp3amdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMDM3NzAsImV4cCI6MjA4Nzc3OTc3MH0.fBajcHIJZs1lYwfEJRtnHvZdjqZ2u7YGIuPnhyAg85g"
-_PUBLIC_SUPABASE_SVC  = ""  # service key NEVER embedded in public package
-
-# ── Edge Function endpoint (routes submissions through service role — bypasses RLS)
-_SUBMIT_EDGE_URL = "https://turwttpspnqmhszjwjgs.supabase.co/functions/v1/submit-listing"
-_CLI_TOKEN       = "zforge-submit-v2"  # public abuse-gate token, not a secret
-
-
-from cli._console import HAS_RICH, console, _print, _rule
-
 try:
     from rich.panel import Panel
     from rich.table import Table
@@ -77,11 +28,60 @@ try:
 except ImportError:
     pass
 
+# Internal validator — CERTIFIED badge is earned, not self-reported
+from cli.validator import run_validate as _run_validator
+from cli.apol import apol_certify
+from cli._config import load_credentials as _load_zforge_credentials, CONFIG_PATH
+from cli._console import HAS_RICH, console, _print, _rule
+
+# ── Public read-only Supabase credentials (anon key — safe to embed) ─────────
+# Creators don't need to configure env vars to publish — these are fallbacks.
+_PUBLIC_SUPABASE_URL  = "§§secret(SUPABASE_URL)"
+_PUBLIC_SUPABASE_ANON = "§§secret(SUPABASE_ANON_KEY)"
+_PUBLIC_SUPABASE_SVC  = ""  # service key NEVER embedded in public package
+
+# ── Edge Function endpoint (routes submissions through service role — bypasses RLS)
+_SUBMIT_EDGE_URL = "§§secret(SUPABASE_URL)/functions/v1/submit-listing"
+_CLI_TOKEN       = "zforge-submit-v2"  # public abuse-gate token, not a secret
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 # _print and _rule imported from cli._console
+
+
+def _supabase_anon_headers() -> dict:
+    """Standard headers for public (anon-key) Supabase REST calls."""
+    return {
+        "apikey": _PUBLIC_SUPABASE_ANON,
+        "Authorization": "Bearer " + _PUBLIC_SUPABASE_ANON,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+
+
+def _verify_api_key(api_key: str) -> dict:
+    "Verify API key via secure Supabase RPC (api_key column not exposed to anon)."
+    if not HAS_REQUESTS:
+        return {}
+    url = _PUBLIC_SUPABASE_URL.rstrip("/") + "/rest/v1/rpc/verify_api_key"
+    headers = _supabase_anon_headers()
+    try:
+        resp = requests.post(url, json={"key": api_key}, headers=headers, timeout=10)
+        if resp.status_code == 200:
+            rows = resp.json()
+            if rows:
+                return rows[0]
+            _print("  [bold red]ERROR: API key not found. Get yours at zero-forge.org/profile/edit/[/bold red]")
+            sys.exit(1)
+        else:
+            _print(f"  [yellow]Warning: Could not verify API key (HTTP {resp.status_code}) - proceeding unverified[/yellow]")
+            return {}
+    except Exception as exc:
+        _print(f"  [yellow]Warning: API key verification skipped ({exc})[/yellow]")
+        return {}
 
 
 def load_env():
@@ -167,10 +167,10 @@ else:
                 if field not in meta:
                     raise ValueError(f'metadata.{field} is required')
             desc = data.get('description', {})
-            short = desc.get('short', '')  
+            short = desc.get('short', '')
             if len(short) > 120:
                 raise ValueError('short description must be <=120 chars')
-            agent_desc = desc.get('description_for_agent', '')  
+            agent_desc = desc.get('description_for_agent', '')
             if len(agent_desc.split()) < 10:
                 raise ValueError('description_for_agent must be >=10 words')
             return inst
@@ -271,7 +271,7 @@ def upload_to_storage(zip_path: Path, skill_name: str, service_key: str, supabas
 # ZIP upload via Edge Function (no service key needed on creator machines)
 # ---------------------------------------------------------------------------
 
-_UPLOAD_EDGE_URL = "https://turwttpspnqmhszjwjgs.supabase.co/functions/v1/upload-skill-zip"
+_UPLOAD_EDGE_URL = "§§secret(SUPABASE_URL)/functions/v1/upload-skill-zip"
 
 
 def upload_via_edge_function(zip_path, skill_name):
@@ -498,18 +498,18 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
             quality_raw = raw.get('quality', {})
             class _NS: pass
             meta = _NS()
-            meta.name = meta_raw.get('name', '')  
-            meta.slug = meta_raw.get('slug', '')  
-            meta.version = meta_raw.get('version', '')  
-            meta.author = meta_raw.get('author', '')  
-            meta.author_url = meta_raw.get('author_url', '')  
-            meta.license = meta_raw.get('license', '')  
-            meta.category = meta_raw.get('category', '')  
+            meta.name = meta_raw.get('name', '')
+            meta.slug = meta_raw.get('slug', '')
+            meta.version = meta_raw.get('version', '')
+            meta.author = meta_raw.get('author', '')
+            meta.author_url = meta_raw.get('author_url', '')
+            meta.license = meta_raw.get('license', '')
+            meta.category = meta_raw.get('category', '')
             meta.tags = meta_raw.get('tags', [])
             meta.repository = meta_raw.get('repository', None)
             desc = _NS()
-            desc.short = desc_raw.get('short', '')  
-            desc.description_for_agent = desc_raw.get('description_for_agent', '')  
+            desc.short = desc_raw.get('short', '')
+            desc.description_for_agent = desc_raw.get('description_for_agent', '')
             quality = _NS()
             quality.apol_certified = quality_raw.get('apol_certified', False)
             quality.apol_cert_id = quality_raw.get('apol_cert_id', None)
