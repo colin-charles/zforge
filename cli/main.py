@@ -6,6 +6,7 @@ import urllib.request
 import urllib.error
 import json as _json
 from pathlib import Path
+from cli._config import load_credentials, save_credentials, CONFIG_PATH
 from typing import Optional
 
 import typer
@@ -183,7 +184,6 @@ def login(
     """Authenticate with ZeroForge via GitHub OAuth (browser), manual API key, or --token flag (headless/CI)."""
     import urllib.request, urllib.error, json as _json, threading, webbrowser
     from http.server import HTTPServer, BaseHTTPRequestHandler
-    from pathlib import Path
 
     _SUPABASE_URL  = _PUBLIC_SUPABASE_URL
     _SUPABASE_ANON = _PUBLIC_SUPABASE_ANON
@@ -424,26 +424,12 @@ h1{font-size:1.2em;margin-bottom:16px;}p{color:#aaa;font-size:.9em;}
 
 
 def _save_zforge_config(api_key: str, handle: str):
-    import json as _json
-    from pathlib import Path
-    config_dir  = Path.home() / ".zforge"
-    config_dir.mkdir(exist_ok=True)
-    config_path = config_dir / "config.json"
-    config = {}
-    if config_path.exists():
-        try:
-            config = _json.loads(config_path.read_text())
-        except Exception:
-            config = {}
-    config["api_key"] = api_key
-    config["handle"]  = handle
-    config_path.write_text(_json.dumps(config, indent=2))
-    config_path.chmod(0o600)
+    """Thin wrapper around cli._config.save_credentials()."""
+    save_credentials(api_key, handle)
 
 
 def _print_zforge_login_success(handle: str):
-    from pathlib import Path
-    config_path = Path.home() / ".zforge" / "config.json"
+    config_path = CONFIG_PATH
     if HAS_RICH:
         console.print(Panel(
             f"[bold green]\u2705 Authenticated as @{handle}[/bold green]\n"
@@ -464,31 +450,23 @@ def _print_zforge_login_success(handle: str):
 @app.command()
 def whoami():
     """Show who you are logged in as on ZeroForge."""
-    import json as _json
-    from pathlib import Path
-
-    config_path = Path.home() / ".zforge" / "config.json"
-    if not config_path.exists():
+    config = load_credentials()
+    if not config:
         if HAS_RICH:
             console.print("  [yellow]Not logged in.[/yellow] Run [bold cyan]zforge login[/bold cyan] to authenticate.")
         else:
             print("  Not logged in. Run: zforge login")
         raise typer.Exit(1)
 
-    try:
-        config  = _json.loads(config_path.read_text())
-        handle  = config.get("handle", "unknown")
-        api_key = config.get("api_key", "")
-        masked  = api_key[:8] + "..." + api_key[-4:] if len(api_key) > 12 else "***"
-    except Exception:
-        typer.echo("❌ Could not read config. Run: zforge login")
-        raise typer.Exit(1)
+    handle  = config.get("handle", "unknown")
+    api_key = config.get("api_key", "")
+    masked  = api_key[:8] + "..." + api_key[-4:] if len(api_key) > 12 else "***"
 
     if HAS_RICH:
         console.print(Panel(
             f"  [bold]Handle:[/bold]  @{handle}\n"
             f"  [bold]API Key:[/bold] {masked}\n"
-            f"  [bold]Config:[/bold]  {config_path}",
+            f"  [bold]Config:[/bold]  {CONFIG_PATH}",
             title="[bold cyan]// LOGGED IN AS[/bold cyan]",
             border_style="cyan",
             padding=(1, 2)
@@ -496,7 +474,7 @@ def whoami():
     else:
         print(f"  Logged in as @{handle}")
         print(f"  API Key: {masked}")
-        print(f"  Config:  {config_path}")
+        print(f"  Config:  {CONFIG_PATH}")
 
 
 @app.command()
@@ -914,7 +892,6 @@ if __name__ == "__main__":
 def setup():
     """First-time setup wizard — configure your API key in plain English."""
     import os
-    from pathlib import Path
 
     env_path = Path("/a0/usr/workdir/ZeroForge/.env")
 
@@ -1012,7 +989,6 @@ def run_skill(
     """Install a skill AND run it in one command. No terminal knowledge needed."""
     import subprocess, shutil, json, urllib.request, re as _re
     import os, tempfile, zipfile as _zf, urllib.parse as _up
-    from pathlib import Path
 
     env_path = Path("/a0/usr/workdir/ZeroForge/.env")
     supabase_url = os.environ.get("SUPABASE_URL", "").rstrip("/")

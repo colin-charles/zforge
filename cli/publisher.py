@@ -12,16 +12,7 @@ import sys
 import zipfile
 from datetime import datetime
 
-def _load_zforge_credentials() -> dict:
-    """Load saved API key + handle from ~/.zforge/config.json. Returns empty dict if not logged in."""
-    import json as _json
-    config_path = Path.home() / ".zforge" / "config.json"
-    if not config_path.exists():
-        return {}
-    try:
-        return _json.loads(config_path.read_text())
-    except Exception:
-        return {}
+from cli._config import load_credentials as _load_zforge_credentials, CONFIG_PATH
 def _verify_api_key(api_key: str) -> dict:
     "Verify API key via secure Supabase RPC (api_key column not exposed to anon)."
     try:
