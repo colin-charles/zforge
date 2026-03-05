@@ -100,6 +100,7 @@ def load_env():
 
 
 def _is_placeholder(val: str) -> bool:
+    """Return True if *val* looks like a placeholder or dummy value."""
     if not val:
         return True
     placeholders = ['your-service-role-key-here', 'your-anon-key-here',
@@ -186,6 +187,7 @@ EXCLUDE_PATTERNS = {
 
 
 def _should_exclude(rel_path: str) -> bool:
+    """Return True if *rel_path* matches an excluded file/directory pattern."""
     parts = Path(rel_path).parts
     for part in parts:
         if part in EXCLUDE_PATTERNS:
@@ -314,6 +316,7 @@ def upload_via_edge_function(zip_path, skill_name):
 # ---------------------------------------------------------------------------
 
 def _load_apol_cert(skill_dir: Path) -> dict:
+    """Load APOL certification data from the experiments directory."""
     exp_dir = skill_dir / 'experiments'
     if not exp_dir.exists():
         return {}
@@ -570,6 +573,7 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
 
     # 5. Resolve GitHub handle
     def _extract_github_handle(author_url: str, author: str) -> str:
+        """Extract GitHub handle from author URL or author field."""
         if author_url and 'github.com' in author_url:
             return author_url.rstrip('/').split('github.com/')[-1].split('/')[0]
         if author and ' ' not in author.strip():

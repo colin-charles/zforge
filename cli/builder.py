@@ -87,7 +87,8 @@ def _get_api_key(model: str) -> str:
 # _print and _rule imported from cli._console
 
 
-def _banner(name):
+def _banner(name: str) -> None:
+    """Print the zforge build banner with pipeline step overview."""
     _rule(f"zforge build -- {name}")
     _print(f"  [bold]Starting full automated pipeline for:[/bold] [yellow]{name}[/yellow]" if HAS_RICH else f"  Starting full pipeline for: {name}")
     _print("  Steps: scaffold → goal → dev → promote → skill.json → validate → test → publish\n")
@@ -647,7 +648,7 @@ def _script_repair_loop(skill_dir: Path) -> bool:
 
 
 
-def _show_marketplace_url(skill_dir, supabase_url, anon_key, use_rich, console):
+def _show_marketplace_url(skill_dir: "Path", supabase_url: str, anon_key: str, use_rich: bool, console) -> None:
     """Show the marketplace URL after publishing."""
     try:
         sj = skill_dir / "skill.json"
