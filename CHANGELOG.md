@@ -244,6 +244,21 @@ Versions listed newest-first.
 ### Fixed
 - APOL scoring pipeline: two critical bugs in `apol.py` causing incorrect score calculation
 
+## [2.1.4] - 2026-03-02
+### Changed
+- Updated pyproject.toml version metadata and PyPI package classifiers
+
+
+## [2.1.3] - 2026-03-02
+### Fixed
+- Dynamic version detection from importlib.metadata — VERSION constant no longer hardcoded
+
+
+## [2.1.2] - 2026-03-02
+### Fixed
+- Undefined variable in publisher.py causing publish command to crash on first run
+
+
 ## [2.1.1] - 2026-03-02
 ### Fixed
 - **Critical**: Rewrote `validator.py` using string concatenation to fix SyntaxError in generated code blocks
@@ -331,6 +346,26 @@ Versions listed newest-first.
 ### Changed
 - Added comprehensive PyPI metadata: author, homepage, repository, classifiers, keywords
 - Improved package discoverability and legitimacy signals on PyPI
+
+## [1.0.4] - 2026-03-02
+### Fixed
+- zforge list, zforge search, zforge install now work without any setup
+- Public Supabase anon key bundled into CLI (read-only, safe to ship)
+- Only zforge publish requires credentials (GitHub OAuth, unchanged)
+
+
+## [1.0.3] - 2026-03-02
+### Fixed
+- Certification display bug: standardised badge label to CERTIFIED
+- Updated frontend badge rendering for certified skills
+
+
+## [1.0.1] - 2026-03-02
+### Fixed
+- Corrected SKILL.md install paths to use ~/.zforge instead of hardcoded paths
+- Updated install.sh to clone from colin-charles/zforge (new standalone CLI repo)
+- Fixed all internal repo URL references from zeroforge to zforge
+
 
 ## [1.0.0] - 2026-03-02
 ### Added
