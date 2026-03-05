@@ -6,6 +6,9 @@ Usage: python scripts/release.py <version> "<summary>" [--fix|--feature|--change
 Examples:
   python scripts/release.py 2.1.36 "Fixed upgrade loop on fresh install" --fix
   python scripts/release.py 2.2.0 "Added zforge search command" --feature
+
+The website changelog reads CHANGELOG.md directly from GitHub at runtime,
+so only the zforge repo needs updating here.
 """
 
 import sys
@@ -17,17 +20,15 @@ from pathlib import Path
 
 # ── Config ───────────────────────────────────────────────────────────────────
 ZFORGE_REPO  = Path(__file__).parent.parent
-WEBSITE_REPO = Path(__file__).parent.parent.parent / "ZeroForge"
 PYPROJECT    = ZFORGE_REPO / "pyproject.toml"
 CHANGELOG_MD = ZFORGE_REPO / "CHANGELOG.md"
-CHANGELOG_JS = WEBSITE_REPO / "assets/js/pages/changelog.js"
 
 TAG_MAP = {
-    "--fix":     ("FIX",     "var(--text-dim)"),
-    "--feature": ("FEATURE", "var(--red)"),
-    "--changed": ("CHANGED", "var(--accent)"),
-    "--meta":    ("META",    "var(--text-dim)"),
-    "--launch":  ("LAUNCH",  "var(--red)"),
+    "--fix":     "FIX",
+    "--feature": "FEATURE",
+    "--changed": "CHANGED",
+    "--meta":    "META",
+    "--launch":  "LAUNCH",
 }
 
 SECTION_MAP = {
@@ -58,7 +59,7 @@ def bump_version(new_ver):
         print("❌ Could not find version in pyproject.toml")
         sys.exit(1)
     old_ver = match.group(1)
-    content = content.replace('version = "' + old_ver + '"', 'version = "' + new_ver + '"')
+    content = content.replace('version = "' + old_ver + '"', 'version = "' + new_ver + '"' )
     PYPROJECT.write_text(content)
     # Bump __version__ in cli/__init__.py if present
     init_file = ZFORGE_REPO / "cli/__init__.py"
@@ -83,29 +84,6 @@ def update_changelog_md(version, summary, tag_name, today):
     CHANGELOG_MD.write_text("\n".join(lines))
     print("  ✅ CHANGELOG.md updated")
 
-def update_changelog_js(version, summary, tag_name, tag_color, today):
-    section = SECTION_MAP.get(tag_name, "Changed")
-    safe_summary = summary.replace("'", "\\'")
-    entry = (
-        "    {\n"
-        "      version: '" + version + "',\n"
-        "      date: '" + today + "',\n"
-        "      tag: '" + tag_name + "',\n"
-        "      tagColor: '" + tag_color + "',\n"
-        "      sections: {\n"
-        "        " + section + ": [\n"
-        "          '" + safe_summary + "'\n"
-        "        ]\n"
-        "      }\n"
-        "    },\n"
-    )
-    content = CHANGELOG_JS.read_text()
-    marker = "const VERSIONS = ["
-    pos = content.find(marker) + len(marker)
-    new_content = content[:pos] + "\n" + entry + content[pos:]
-    CHANGELOG_JS.write_text(new_content)
-    print("  ✅ changelog.js updated")
-
 def build_and_publish():
     dist = ZFORGE_REPO / "dist"
     run("rm -rf " + str(dist), cwd=ZFORGE_REPO)
@@ -125,12 +103,6 @@ def git_push_zforge(version):
     run("git push origin v" + version, cwd=ZFORGE_REPO)
     print("  ✅ zforge repo pushed + tagged")
 
-def git_push_website(version):
-    run("git add assets/js/pages/changelog.js", cwd=WEBSITE_REPO)
-    run("git commit -m 'docs: changelog entry for v" + version + "'", cwd=WEBSITE_REPO)
-    run("git push origin master", cwd=WEBSITE_REPO)
-    print("  ✅ ZeroForge website pushed")
-
 # ── Main ─────────────────────────────────────────────────────────────────────
 def main():
     if len(sys.argv) < 3:
@@ -146,7 +118,7 @@ def main():
         print("Unknown flag: " + flag + ". Use one of: " + str(list(TAG_MAP.keys())))
         sys.exit(1)
 
-    tag_name, tag_color = TAG_MAP[flag]
+    tag_name = TAG_MAP[flag]
 
     print("")
     print("🚀 Releasing zforge v" + version + " [" + tag_name + "]")
@@ -154,29 +126,25 @@ def main():
     print("   Date    : " + today)
     print("")
 
-    print("[1/6] Bumping version...")
+    print("[1/4] Bumping version...")
     bump_version(version)
 
-    print("[2/6] Updating CHANGELOG.md...")
+    print("[2/4] Updating CHANGELOG.md...")
     update_changelog_md(version, summary, tag_name, today)
 
-    print("[3/6] Updating changelog.js (website)...")
-    update_changelog_js(version, summary, tag_name, tag_color, today)
-
-    print("[4/6] Building & publishing to PyPI...")
+    print("[3/4] Building & publishing to PyPI...")
     build_and_publish()
 
-    print("[5/6] Pushing zforge repo + tag...")
+    print("[4/4] Pushing zforge repo + tag...")
     git_push_zforge(version)
-
-    print("[6/6] Pushing ZeroForge website...")
-    git_push_website(version)
 
     print("")
     print("✅ zforge v" + version + " released!")
     print("   PyPI      : https://pypi.org/project/zforge/" + version + "/")
     print("   Changelog : https://zero-forge.org/changelog/")
     print("   Upgrade   : pip install --upgrade zforge")
+    print("")
+    print("   ℹ️  Website changelog auto-reads from GitHub — no separate push needed.")
 
 if __name__ == "__main__":
     main()
