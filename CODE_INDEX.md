@@ -1,7 +1,7 @@
 # ZeroForge CLI — Code Index & Concordance
 
 > **Last updated:** 2026-03-05  
-> **CLI version:** 2.1.52  
+> **CLI version:** 2.1.53  
 > **Purpose:** Help any developer — even a junior — navigate the zforge codebase quickly.
 
 ---
@@ -47,6 +47,15 @@ and publish **skills** (reusable AI agent capabilities) to the ZeroForge marketp
 │  run ──→ (inline, downloads + executes skill)                   │
 │  setup ──→ (inline, installs dependencies)                      │
 └──────┬──────────┬──────────┬──────────┬────────────────────────┘
+       │          │          │          │
+       ├──────────┴──────────┴──────────┤
+       ▼                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│               Shared Modules (imported by all above)            │
+│  _console.py ─── Rich / plain-text output helpers               │
+│  _config.py ──── ~/.zforge/config.json read/write               │
+│  _constants.py ─ Supabase URLs, keys, thresholds, categories    │
+└─────────────────────────────────────────────────────────────────┘
        │          │          │          │
        ▼          ▼          ▼          ▼
 ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌─────────────────────────┐
@@ -99,7 +108,10 @@ and publish **skills** (reusable AI agent capabilities) to the ZeroForge marketp
 | `validator.py` | 213 | **Skill validator.** Checks that a skill directory has all required files, valid JSON, correct SKILL.md structure, etc. |
 | `tester.py` | 98 | **Test runner entry point.** Thin wrapper that calls `scripts/test_runner.py`. |
 | `runner.py` | 151 | **Dev server.** Runs a skill in development mode for local testing. |
-| `__init__.py` | 25 | **Version constant.** Holds `__version__ = "2.1.52"`. |
+| `__init__.py` | 25 | **Version constant.** Holds `__version__ = "2.1.53"`. |
+| `_console.py` | 29 | **Shared Rich console helpers.** Provides `_print()` and `_rule()` with Rich/plain fallback. Imported by publisher, builder, apol, scaffold. |
+| `_config.py` | 41 | **Shared credential helpers.** Single source of truth for `~/.zforge/config.json`. Provides `load_credentials()` and `save_credentials()`. |
+| `_constants.py` | 39 | **Shared constants.** Supabase URLs, anon key, edge function URLs, APOL threshold, category map. Every module imports from here. |
 
 ### Support Scripts (`cli/scripts/`)
 
@@ -266,6 +278,11 @@ Alphabetical listing of important functions with file and line number.
 | Function | File | Line | Purpose |
 |----------|------|-----:|---------|
 | `_call_judge()` | apol.py | 232 | Send SKILL.md to apol-judge edge function, get KPI scores |
+| `_print()` | _console.py | 17 | Print with Rich styling if available, stripping markup tags otherwise |
+| `_rule()` | _console.py | 24 | Print a horizontal rule with title centred (Rich or plain fallback) |
+| `get_supabase_url()` | _constants.py | 36 | Return Supabase project URL, preferring env var over embedded default |
+| `load_credentials()` | _config.py | 16 | Load API key + handle from ~/.zforge/config.json (empty dict if missing) |
+| `save_credentials()` | _config.py | 27 | Persist api_key and handle into ~/.zforge/config.json (chmod 600) |
 | `_call_openrouter_repair()` | builder.py | 619 | Ask LLM to fix broken skill scripts |
 | `_call_refine()` | apol.py | 275 | Send SKILL.md + feedback to apol-refine for improvement suggestions |
 | `_check_for_update()` | main.py | 78 | Check PyPI for newer zforge version |
@@ -401,11 +418,11 @@ Alphabetical listing of important functions with file and line number.
 
 | Setting | Source | Used In | Notes |
 |---------|--------|---------|-------|
-| Supabase URL | Hardcoded | publisher.py, apol.py, main.py | Same URL across all modules |
-| Supabase Anon Key | Hardcoded | publisher.py, main.py | Public key, safe to embed |
+| Supabase URL | `_constants.py` (env override) | All modules via `get_supabase_url()` | Prefers `SUPABASE_URL` env var, falls back to embedded |
+| Supabase Anon Key | `_constants.py` | publisher.py, main.py | Public key, safe to embed |
 | Supabase Service Key | Env: `SUPABASE_SERVICE_ROLE_KEY` | publisher.py (storage upload) | Secret, never in client code |
-| User API Key | `~/.zforge/config.json` | publisher.py | Created by `zforge login` |
-| GitHub Handle | `~/.zforge/config.json` | publisher.py | Created by `zforge login` |
+| User API Key | `~/.zforge/config.json` | publisher.py (via `_config.py`) | Created by `zforge login` |
+| GitHub Handle | `~/.zforge/config.json` | publisher.py (via `_config.py`) | Created by `zforge login` |
 | OpenRouter API Key | Env: `OPENROUTER_API_KEY` | builder.py | For LLM calls during build |
 | PyPI Token | Env: `PYPI_TOKEN` | release.py | For publishing releases |
 | LLM Model | Env or defaults | builder.py | Default: `google/gemini-2.0-flash-001` |
@@ -425,26 +442,21 @@ Created by `zforge login`. Permissions set to `chmod 600` (owner-only read/write
 
 ## 9. Common Code Patterns
 
-### Pattern 1: Rich Console Fallback
+### Pattern 1: Rich Console Fallback (centralized in `_console.py`)
 
-**Used in:** publisher.py, builder.py, apol.py, scaffold.py
+**Defined in:** `_console.py` — imported by publisher.py, builder.py, apol.py, scaffold.py
 
 ```python
-# Try to import Rich for pretty terminal output.
-# If not installed, fall back to plain print().
-try:
-    from rich.console import Console
-    console = Console()
-    _use_rich = True
-except ImportError:
-    class _FallbackConsole:
-        def print(self, *a, **k): print(*a)
-        def rule(self, t=""): print(f"{'='*60} {t}")
-    console = _FallbackConsole()
-    _use_rich = False
+# cli/_console.py — single source of truth for Rich/plain output
+from cli._console import _print, _rule
+
+_print("[bold green]Success![/bold green]")  # Rich markup stripped if Rich missing
+_rule("Section Title")                        # Horizontal rule with title
 ```
 
-**Why:** Rich is optional. The CLI must work even without it.
+**Previously:** Each module had its own Rich try/except fallback block (duplicated 4×).
+**Now:** All modules import `_print()` and `_rule()` from `_console.py`. Markup tags
+are automatically stripped when Rich is not installed.
 
 ### Pattern 2: Pydantic Fallback
 
@@ -559,4 +571,4 @@ resp = requests.post(
 
 ---
 
-*Generated for ZeroForge CLI v2.1.52 — Update this file when adding new commands or major refactors.*
+*Generated for ZeroForge CLI v2.1.53 — Update this file when adding new commands or major refactors.*
