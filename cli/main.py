@@ -621,6 +621,21 @@ def install(
             print("  Running install.sh...")
         subprocess.run(["bash", str(install_sh)], cwd=str(target))
 
+    # 4b. Record download (analytics, non-blocking, never fails)
+    try:
+        _slug = listing.get("slug") or listing.get("title", slug)
+        _ping_data = json.dumps({"skill_slug": _slug}).encode()
+        _ping_req = urllib.request.Request(
+            f"{supabase_url}/rest/v1/rpc/increment_downloads",
+            data=_ping_data,
+            headers={"apikey": anon_key, "Authorization": f"Bearer {anon_key}",
+                     "Content-Type": "application/json"},
+            method="POST",
+        )
+        urllib.request.urlopen(_ping_req, timeout=2)
+    except Exception:
+        pass  # Analytics must never break installs
+
     # 5. Done
     _a0_note = "  [dim]Agent Zero: reload skills or use skills_tool to access it.[/dim]" if str(target).startswith("/a0/skills") else ""
     _a0_note_plain = "  Agent Zero: reload skills or use skills_tool to access it." if str(target).startswith("/a0/skills") else ""
@@ -911,6 +926,20 @@ def run_skill(
             os.unlink(tmp_path)
             if HAS_RICH:
                 console.print("  [green]Downloaded[/green]")
+            # Record download (analytics, non-blocking)
+            try:
+                _slug = listing.get("slug") or listing.get("title", slug)
+                _ping_data = json.dumps({"skill_slug": _slug}).encode()
+                _ping_req = urllib.request.Request(
+                    f"{supabase_url}/rest/v1/rpc/increment_downloads",
+                    data=_ping_data,
+                    headers={"apikey": anon_key, "Authorization": f"Bearer {anon_key}",
+                             "Content-Type": "application/json"},
+                    method="POST",
+                )
+                urllib.request.urlopen(_ping_req, timeout=2)
+            except Exception:
+                pass  # Analytics must never break installs
         except Exception as e:
             if HAS_RICH:
                 console.print(f"[red]Download failed: {e}[/red]")

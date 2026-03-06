@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.55] - 2026-03-06
+### Added
+- Added: non-blocking download counter ping on install and run commands for marketplace analytics
+
+
 ## [2.1.54] - 2026-03-05
 ### Fixed
 - Add User-Agent tracking on all API calls and zforge report bug reporting command
