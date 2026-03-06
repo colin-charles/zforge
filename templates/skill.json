@@ -11,7 +11,8 @@
     "repository": "https://github.com/[AUTHOR]/[REPO]",
     "license": "MIT",
     "price": "free",
-    "category": "[productivity|data|web|dev-tools|ai|security|media|utility]",
+    "_category_options": "skill | guide | template | script | course | consulting",
+    "category": "skill",
     "tags": ["[tag1]", "[tag2]", "[tag3]"],
     "created_at": "[YYYY-MM-DD]",
     "updated_at": "[YYYY-MM-DD]"
