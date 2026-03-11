@@ -1,2 +1,2 @@
 # zforge CLI package
-__version__ = "2.1.57"
+__version__ = "2.1.58"

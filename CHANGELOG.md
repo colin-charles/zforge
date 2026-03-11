@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.58] - 2026-03-11
+### Fixed
+- fix: set apol_certified from actual score instead of hardcoded False
+
+
 ## [2.1.57] - 2026-03-11
 ### Fixed
 - fix: add Supabase auth headers to APOL edge function calls — resolves 401 Missing authorization header
