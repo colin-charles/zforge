@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.57] - 2026-03-11
+### Fixed
+- fix: add Supabase auth headers to APOL edge function calls — resolves 401 Missing authorization header
+
+
 ## [2.1.56] - 2026-03-11
 ### Fixed
 - Add zforge fix command — auto-repairs missing skill.json and SKILL.md sections

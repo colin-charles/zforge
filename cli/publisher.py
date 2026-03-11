@@ -34,10 +34,10 @@ from cli.apol import apol_certify
 from cli._config import load_credentials as _load_zforge_credentials
 from cli._console import HAS_RICH, console, _print, _rule
 from cli._constants import (
-    _PUBLIC_SUPABASE_URL, _PUBLIC_SUPABASE_ANON, _PUBLIC_SUPABASE_SVC,
+    _PUBLIC_SUPABASE_URL, _PUBLIC_SUPABASE_SVC,
     _SUBMIT_EDGE_URL, _UPLOAD_EDGE_URL, _CLI_TOKEN,
     CERTIFIED_THRESHOLD, VALID_CATEGORIES, CATEGORY_MAP,
-    api_headers,
+    supabase_headers,
 )
 
 
@@ -49,13 +49,7 @@ from cli._constants import (
 # _print and _rule imported from cli._console
 
 
-def _supabase_anon_headers() -> dict:
-    """Standard headers for public (anon-key) Supabase REST calls."""
-    return api_headers(
-        apikey=_PUBLIC_SUPABASE_ANON,
-        Authorization="Bearer " + _PUBLIC_SUPABASE_ANON,
-        **{"Content-Type": "application/json", "Accept": "application/json"},
-    )
+
 
 
 def _verify_api_key(api_key: str) -> dict:
@@ -63,7 +57,7 @@ def _verify_api_key(api_key: str) -> dict:
     if not HAS_REQUESTS:
         return {}
     url = _PUBLIC_SUPABASE_URL.rstrip("/") + "/rest/v1/rpc/verify_api_key"
-    headers = _supabase_anon_headers()
+    headers = supabase_headers(**{"Content-Type": "application/json", "Accept": "application/json"})
     try:
         resp = requests.post(url, json={"key": api_key}, headers=headers, timeout=10)
         if resp.status_code == 200:
@@ -290,7 +284,7 @@ def upload_via_edge_function(zip_path, skill_name) -> Optional[str]:
         with open(zip_path, "rb") as f:
             resp = requests.post(
                 edge_url,
-                headers=api_headers(**{"x-zforge-token": _CLI_TOKEN}),
+                headers=supabase_headers(**{"x-zforge-token": _CLI_TOKEN}),
                 files={"file": (zip_path.name, f, "application/zip")},
                 data={"skill_name": skill_name},
                 timeout=120,
@@ -354,7 +348,7 @@ def _submit_to_edge_function(payload: dict, api_key: str = '') -> dict:
             "ZFORGE_SUBMIT_URL not set and public fallback is missing — contact support"
         )
 
-    headers = api_headers(
+    headers = supabase_headers(
         **{"Content-Type": "application/json"},
         **({"X-ZForge-Key": api_key} if api_key else {}),
         **{"x-zforge-token": _CLI_TOKEN},

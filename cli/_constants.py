@@ -50,3 +50,17 @@ def api_headers(**extra: str) -> dict[str, str]:
     h = {"User-Agent": USER_AGENT}
     h.update(extra)
     return h
+
+
+def supabase_headers(**extra: str) -> dict[str, str]:
+    """Return headers for Supabase API calls (anon key auth + User-Agent).
+
+    Supabase's API gateway requires ``apikey`` and ``Authorization``
+    headers to route requests to edge functions. Without them, the
+    gateway returns 401 before the function even executes.
+    """
+    return api_headers(
+        apikey=_PUBLIC_SUPABASE_ANON,
+        Authorization=f"Bearer {_PUBLIC_SUPABASE_ANON}",
+        **extra,
+    )
