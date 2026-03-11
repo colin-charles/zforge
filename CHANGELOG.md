@@ -6,6 +6,11 @@ Versions listed newest-first.
 
 ---
 
+## [2.1.56] - 2026-03-11
+### Fixed
+- Add zforge fix command — auto-repairs missing skill.json and SKILL.md sections
+
+
 ## [2.1.55] - 2026-03-06
 ### Added
 - Added: non-blocking download counter ping on install and run commands for marketplace analytics

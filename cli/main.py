@@ -301,6 +301,23 @@ def validate(
     raise typer.Exit(code=exit_code)
 
 
+
+
+@app.command()
+def fix(
+    skill: str = typer.Argument(".", help="Skill directory to fix (default: cwd)"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Preview fixes without applying them"),
+) -> None:
+    """Auto-fix skill deficiencies (missing skill.json, missing sections, etc)."""
+    from cli.fixer import run_fix
+    skill_path = Path(skill).resolve()
+    if not skill_path.is_absolute() and not skill_path.is_dir():
+        candidate = Path.cwd() / skill
+        if candidate.is_dir():
+            skill_path = candidate
+    exit_code = run_fix(skill_dir=skill_path, dry_run=dry_run)
+    raise typer.Exit(code=exit_code)
+
 @app.command()
 def test(
     skill: str = typer.Option(".", "--skill", "-s", help="Skill directory to test (default: cwd)"),
