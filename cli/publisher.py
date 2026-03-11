@@ -624,7 +624,7 @@ def publish_skill(skill_dir_arg: Path, dry_run: bool = False, source_repo: str =
         "price": "free",
         "skill_md": _skill_md_content,  # for server-side APOL scoring
         "status": "pending",  # server determines final status via APOL
-        "apol_certified": False,  # server-side APOL determines this
+        "apol_certified": bool(apol_score and apol_score >= 0.80),  # certified if APOL score >= 80%
         "apol_cert": {
             "apol_composite_score": apol_score,
             "apol_cert_id": cert_id,
